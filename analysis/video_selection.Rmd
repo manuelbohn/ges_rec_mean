@@ -18,6 +18,7 @@ gram_data <- read_csv(file="../data/pt2_data.csv")%>%
 
 
 ```{r}
+# selecting relevant videos
 gram_data %>%
   filter(diff == "yes", predicate != "static")%>%
   mutate(hol_or_atom = ifelse(hol_or_atom == "0", "holistisch", "sequentiell"))%>%
