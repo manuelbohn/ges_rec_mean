@@ -5,3 +5,6 @@
 *.Rapp.history
 *.tex
 *.fff
+
+/experiments/video/*
+/experiments/jspsych-6/*
