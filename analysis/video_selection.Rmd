@@ -24,17 +24,26 @@ gram_data%>%
 
 ```{r}
 # selecting relevant videos
-gram_data %>%
+to_select <- gram_data %>%
   filter(diff == "yes", predicate != "static")%>%
   mutate(hol_or_atom = ifelse(hol_or_atom == "0", "holistisch", "sequentiell"))%>%
   group_by(sex, age, condition,stimulus,hol_or_atom)%>%
   summarise(n = length(unique(id)))%>%
   group_by(sex, age,condition,stimulus)%>%
   mutate(count = length(hol_or_atom))%>%
-  filter(count > 1)
+  filter(count > 1)%>%
+  group_by(stimulus,hol_or_atom)%>%
+  summarise(n = n())
 
-#write_csv(to_select, "../video_select.csv")
+
+write_csv(to_select, "../video_select.csv")
 ```
+
+
+```{r}
+sample(rep(c("6f","6m","8f","8m"),25))
+```
+
 
 ```{r}
 gram_data %>%
@@ -47,7 +56,7 @@ gram_data %>%
     ,hol_or_atom == "sequentiell"
     ,sex == "f"
     #,sex == "m"
-    ,age == "6"
+    ,age == "8"
     #,age == "8"
   )%>%
   mutate(id = id)
