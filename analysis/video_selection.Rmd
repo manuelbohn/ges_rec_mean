@@ -5,8 +5,6 @@ output: html_document
 
 ```{r load_packages, include = FALSE}
 library(tidyverse)
-library(ggthemes)
-library(langcog)
 
 ```
 
@@ -26,7 +24,7 @@ gram_data%>%
 
 ```{r}
 # selecting relevant videos
-to_select <- gram_data %>%
+gram_data %>%
   filter(diff == "yes", predicate != "static")%>%
   mutate(hol_or_atom = ifelse(hol_or_atom == "0", "holistisch", "sequentiell"))%>%
   group_by(sex, age, condition,stimulus,hol_or_atom)%>%
@@ -35,7 +33,7 @@ to_select <- gram_data %>%
   mutate(count = length(hol_or_atom))%>%
   filter(count > 1)
 
-length(unique(to_select$stimulus))
+#write_csv(to_select, "../video_select.csv")
 ```
 
 ```{r}
