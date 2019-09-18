@@ -11,21 +11,49 @@ library(langcog)
 ```
 
 
-```{r }
-gram_data <- read_csv(file="../data/pt2_data.csv")%>%
+```{r}
+gram_data <- read_csv(file="../data/pt2_data_video_select.csv")%>%
   select(-X1)
 ```
 
+```{r}
+gram_data%>%
+  group_by(condition)%>%
+  summarise(n = length(unique(id)))
+```
+
+"diff" codes whether child mada any attempt to differentiate between two versions of the stimuli. 
 
 ```{r}
 # selecting relevant videos
+to_select <- gram_data %>%
+  filter(diff == "yes", predicate != "static")%>%
+  mutate(hol_or_atom = ifelse(hol_or_atom == "0", "holistisch", "sequentiell"))%>%
+  group_by(sex, age, condition,stimulus,hol_or_atom)%>%
+  summarise(n = length(unique(id)))%>%
+  group_by(sex, age,condition,stimulus)%>%
+  mutate(count = length(hol_or_atom))%>%
+  filter(count > 1)
+
+length(unique(to_select$stimulus))
+```
+
+```{r}
 gram_data %>%
   filter(diff == "yes", predicate != "static")%>%
   mutate(hol_or_atom = ifelse(hol_or_atom == "0", "holistisch", "sequentiell"))%>%
-  group_by(condition,stimulus,hol_or_atom)%>%
-  summarise(n = length(unique(id)))%>%
-  group_by(condition,stimulus)%>%
-  mutate(count = length(hol_or_atom))%>%
-  filter(count > 1)
+  filter(stimulus %in% to_select$stimulus)%>%
+  filter(
+    stimulus == "bike_many"
+    #,hol_or_atom == "holistisch"
+    ,hol_or_atom == "sequentiell"
+    ,sex == "f"
+    #,sex == "m"
+    ,age == "6"
+    #,age == "8"
+  )%>%
+  mutate(id = id)
 ```
+
+
 
