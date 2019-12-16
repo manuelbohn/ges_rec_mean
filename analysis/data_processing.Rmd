@@ -1,0 +1,420 @@
+---
+title: "Extracting data from CSV files"
+output: html_document
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(tidyr)
+library(tidyverse)
+library(stringr)
+library(dplyr)
+library(ggplot2)
+library(ggthemes)
+library(ngram)
+library(tidytext)
+
+library(reshape2)
+library(data.table)
+
+library(tm)
+library(SnowballC)
+library(wordcloud)
+library(RColorBrewer)
+
+library(xlsx)
+
+
+```
+
+
+
+1. Set wd + read files
+
+```{r cars}
+files <- dir("~/Documents/Praktikum Leipzig/test_data/")
+
+raw_data <- data.frame()
+for (f in files) {
+  jf <- paste("~/Documents/Praktikum Leipzig/test_data/",f,sep="")
+  jd <- read.csv(jf)%>%mutate(id = f)
+  raw_data <- bind_rows(raw_data, jd)
+}
+```
+
+
+2. Create a data frame 
+2.1. data frame with original data (for all subjects containing id, stimulus, response, number of repetitions + word length)
+
+(Helpful for deleting special characters: https://stackoverflow.com/questions/10294284/remove-all-special-characters-from-a-string-in-r)
+
+```{r}
+data_file_pretest <- raw_data %>%
+  filter(video_type == "A" | survey_type == "A")%>%
+  mutate(stimulus = ifelse(stimulus == "", NA, as.character(stimulus)),
+         responses = ifelse(responses == "", NA, as.character(responses)))%>%
+  fill(stimulus, .direction = "down")%>%
+  fill(responses, .direction = "up")%>%
+  filter(trial_type =="video")%>%
+  group_by(id,stimulus,responses)%>%
+  summarise(repetitions = n()) %>%
+  ungroup()%>%
+  mutate(id = str_replace(id, ".csv",""),
+         stimulus = str_replace(stimulus, "[^[:alnum:]]",""),
+         stimulus = str_replace(stimulus, "[^[:alnum:]]","")) %>%
+  separate(stimulus, c("object", "predicate", "condition")) %>%
+  mutate(responses = str_replace(responses, "Q0",""),
+         responses = str_replace(responses, "[^[:alnum:]]",""),
+         responses = str_replace(responses, "[^[:alnum:]]",""),
+         responses = str_replace(responses, "[^[:alnum:]]",""),
+         responses = str_replace(responses, "[^[:alnum:]]",""),
+         responses = str_replace(responses, "[^[:alnum:]]",""))  %>%
+  mutate(property = ifelse(predicate == "jump" | predicate == "run", "movement",
+                           ifelse(predicate == "big" | predicate == "small", "size","number")))%>%
+  mutate(class = ifelse(object == "ball" | object == "bike" | object == "comb" | object == "bike" | object == "fork" | object == "hammer", "object","animal"))%>%
+  group_by(id, object,predicate,condition, responses)%>%
+  mutate(words = wordcount(responses),
+         characters = nchar(responses))%>%
+  separate(responses, c("w1","w2", "w3", "w4", "w5", "w6", "w7", "w8", "w9", "w10"))%>%
+  gather(tokens,value, w1,w2, w3, w4, w5, w6, w7, w8, w9, w10) %>%
+  mutate(value2 = ifelse(value == "", "NA", "stay")) %>%
+  filter(value2 == "stay") %>%
+  select(-value2) %>%
+  arrange(id, object,predicate)
+
+data_file_pretest
+
+## First inspection of data
+x <- data_file_pretest %>%
+  group_by(condition)%>%
+  summarise(mean_w = mean(words),
+            mean_c = mean(characters),
+            mean_r = mean(repetitions))
+
+```
+
+
+(Tidy text format: https://www.tidytextmining.com/tidytext.html)
+
+2.2 tidy data for AV3 analyses 
+2.2.3 unique words
+
+```{r}
+words <- data_file_pretest %>%
+  group_by(value) %>%
+  summarise(freq = n()) %>%
+  arrange(-freq)
+  
+words
+
+## Export as data file - doesn#t work yet
+## write.xlsx(mydata, "c:/mydata.xlsx")
+## https://www.statmethods.net/input/exportingdata.html
+
+
+# library(xlsx)
+# write.xlsx(x, file, sheetName="Sheet1")
+
+## groß und klein Schreibung egal  
+```
+
+
+2.2.4. answers for each stimulus
+
+```{r}
+data_file_stimulus <- raw_data %>%
+  filter(video_type == "A" | survey_type == "A")%>%
+  mutate(stimulus = ifelse(stimulus == "", NA, as.character(stimulus)),
+         responses = ifelse(responses == "", NA, as.character(responses)))%>%
+  fill(stimulus, .direction = "down")%>%
+  fill(responses, .direction = "up")%>%
+  filter(trial_type =="video")%>%
+  group_by(id,stimulus,responses)%>%
+  summarise(repetitions = n()) %>%
+  ungroup()%>%
+  mutate(id = str_replace(id, ".csv",""),
+         stimulus = str_replace(stimulus, "[^[:alnum:]]",""),
+         stimulus = str_replace(stimulus, "[^[:alnum:]]","")) %>%
+  separate(stimulus, c("object", "predicate", "condition")) %>%
+   mutate(responses = str_replace(responses, "Q0",""),
+         responses = str_replace(responses, "[^[:alnum:]]",""),
+         responses = str_replace(responses, "[^[:alnum:]]",""),
+         responses = str_replace(responses, "[^[:alnum:]]",""),
+         responses = str_replace(responses, "[^[:alnum:]]",""),
+         responses = str_replace(responses, "[^[:alnum:]]","")) %>%
+   group_by(id, object, predicate,condition, responses) %>%
+  unite(stimulus_nc, object, predicate, sep = "_") %>%         ## combine obj + pre --> stim 
+  arrange(stimulus_nc)                                         ## arrange after stimulus
+
+data_file_stimulus
+
+## without id + cond not identifiable, just use Excel function (hide / ausblenden)
+
+#############
+
+stimulus_response <- data_file_stimulus %>%
+  arrange(stimulus_nc)
+  
+  group_by(stimulus_nc) %>%
+  summarise(freq = n()) %>%
+  arrange(-freq)
+
+stimulus_response
+
+
+  group_by(object, predicate, responses) %>%  ## delete condition
+  ungroup()
+
+
+
+  mutate(property = ifelse(predicate == "jump" | predicate == "run", "movement",
+                           ifelse(predicate == "big" | predicate == "small", "size","number")))%>%
+  mutate(class = ifelse(object == "ball" | object == "bike" | object == "comb" | object == "bike" | object == "fork" | object == "hammer", "object","animal"))%>%
+  group_by(id, object,predicate,condition, responses)%>%
+  mutate(words = wordcount(responses),
+         characters = nchar(responses))%>%
+  separate(responses, c("w1","w2", "w3", "w4", "w5", "w6", "w7", "w8", "w9", "w10"))%>%
+  gather(tokens,value, w1,w2, w3, w4, w5, w6, w7, w8, w9, w10) %>%
+  mutate(value2 = ifelse(value == "", "NA", "stay")) %>%
+  filter(value2 == "stay") %>%
+  select(-value2) %>%
+  arrange(id, object,predicate)
+
+data_file_stimulus
+  
+```
+
+
+
+
+
+
+
+
+2.2.5 filter rows of words that weren't identified as object or predicate
+
+```{r}
+to_exclude <- c("das", "die")
+
+
+data_file_oap <- data_file_pretest %>% 
+  filter(!(value %in% to_exclude)) %>%
+
+  # to do predicate object
+
+
+
+```
+
+
+
+
+
+
+2.2.6 seperate word cloud for each object and predicate
+
+```{r}
+jump <- data_file_pretest %>%
+  filter(predicate == "jump") %>%
+  group_by(value) %>%
+  summarise(freq = n()) %>%
+  arrange(-freq)
+
+jump
+
+jump <- data_file_pretest %>%
+  filter(predicate == "jump") %>%
+  pull(value) %>%
+  unique()
+
+jump
+
+
+oap <- c("ball", "bike", "cat", "comb", "duck", "elephant", "fork", "hammer", "monkey", "many", "one", "small", "big", "jump", "run")
+
+###########
+## create a loop for this function
+# to do: if object
+word_cloud <- data.frame()
+for (f in files) {
+  of <- paste("oap",f,sep="")
+  od <- data_file_pretest %>%
+  filter(predicate == of) %>%
+  pull(value) %>%
+  unique() 
+  %>%mutate(id = f)
+  word_cloud <- bind_rows(word_cloud, od)
+}
+
+
+word_cloud <- for(val in oap) {
+  data_file_pretest %>%
+  filter(predicate == val) %>%
+  pull(value) %>%
+  unique()}
+
+
+word_cloud <- data.frame()
+for (f in files) {
+  of <- paste("oap",f,sep=", ")
+  od <- read.csv(of)%>%mutate(stimulus = f)
+  oap_data <- bind_rows(data_file_pretest$value, od)
+}
+
+
+
+## to do: only words coded as predicates + order of usage
+  
+```
+
+
+3. Figures
+
+3.1. Word clouds (for each predicate - hol seq seperate)
+```{r}
+##### 		from frequency counts 	#####
+
+wordcloud <- wordcloud(jump$value, jump$freq, c(5, .4), 1,
+          colors=brewer.pal(8, "Dark2"))
+
+## c(a, .b), c --> a: größe, b: Anordnung, c: Häufigkeit, in der das Wort vorkommt
+
+######
+wordcloud <- wordcloud(c(jump$value), seq(1, 1000, len = 62),
+          colors=brewer.pal(8, "Dark2"))
+
+
+
+```
+
+
+
+#### at the moment irrelevant ###
+
+3.2. Plots
+3.2.1 x: compositionality (hol, seq), y: length
+```{r}
+plot_1 <- ggplot(data = data_file_pretest, aes(condition, characters)) +
+  labs (x = "condition", y = "length") +
+  geom_boxplot()
+plot_1
+
+plot_2 <- ggplot(data = data_file_pretest, aes(condition, characters)) +
+  labs (x = "condition", y = "length") +
+  geom_violin() +
+  geom_point(data = data_file_pretest, aes(condition, characters), colour = 'green', size = 2) 
+plot_2
+
+
+
+########
+##Fill with colours
+plot_1 <- ggplot(data = data_file_pretest, aes(x=condition, y=characters)) +
+  scale_fill_manual(values=c("#999999", "#E69F00")) +
+  geom_boxplot()
+plot_1
+
+
+
+```
+
+
+3.2.2. x: compositionality + property, y = length
+
+```{r}
+plot_1 <- ggplot(data = data_file_pretest, aes(x = condition, y = characters, col = property)) +
+  labs (x = "condition", y = "length") +
+  geom_boxplot()
+plot_1
+
+
+######
+plot_sameManuel <- ggplot(data_file_pretest, 
+       aes(x = condition, y = characters, col = property)) +
+  geom_line(aes(group= property))+
+  geom_point(aes(group= property))+
+  theme_few() + 
+  scale_y_continuous(name = "length")+
+  scale_x_continuous(name = "condition")+
+  theme_few() +
+  scale_colour_manual(name="property",
+                      labels=c("movement", "number","size"), values=c("#859900","#dc322f","#268bd2"))
+
+plot_sameManuel
+```
+
+3.2.3. x: compositionality + property, y = word count
+
+```{r}
+plot_1 <- ggplot(data = data_file_pretest, aes(x = condition, y = words, col = property)) +
+  labs (x = "condition", y = "number_words") +
+  geom_boxplot()
+plot_1
+
+
+```
+
+3.2.2. x: compositionality + class, y = length
+
+```{r}
+plot_1 <- ggplot(data = data_file_pretest, aes(x = condition, y = characters, col = class)) +
+  labs (x = "condition", y = "length") +
+  geom_boxplot()
+plot_1
+
+
+```
+
+
+
+
+
+
+4. Data analysis
+4.1 repetion (difference holistic versus sequential)
+
+```{r}
+## difference in rep (seq versus hol) --> no diff
+t.test(data_file_pretest$repetitions  ~  data_file_pretest$condition)
+ggplot(data_file_pretest, aes(condition, repetitions)) + geom_boxplot()
+
+
+
+```
+
+4.2. word count
+
+```{r}
+t.test(data_file_pretest$word_count  ~  data_file_pretest$condition)
+ggplot(data_file_pretest, aes(condition, word_count)) + geom_boxplot()
+
+```
+
+
+4.3. word lenth
+
+```{r}
+t.test(data_file_pretest$word_length  ~  data_file_pretest$condition)
+ggplot(data_file_pretest, aes(condition, word_lenth)) + geom_boxplot()
+
+```
+
+
+4.4. closeness to stimulus (object)
+
+```{r}
+
+```
+
+
+Frequency of specific words:
+https://www.researchgate.net/post/How_can_I_calculate_the_frequency_of_specific_words_for_each_row_in_the_dataframe_with_R
+
+
+
+H1: mehr relevante Prädikate hol seq
+H2: mehr relevante Objekte
+
+
