@@ -7,6 +7,5 @@
 *.fff
 
 /experiments/video/*
-/experiments/jspsych-6/*
-/experiment/*
+
 
