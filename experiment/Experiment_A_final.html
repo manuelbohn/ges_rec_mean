@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+
+<html>
+    <head>
+        <title>My experiment</title>
+        <script src="jspsych-6/jspsych.js"></script>
+        <script src="jspsych-6/plugins/jspsych-html-keyboard-response.js"></script>
+		<script src="jspsych-6/plugins/jspsych-image-keyboard-response.js"></script>
+		<script src="jspsych-6/plugins/jspsych-video.js"></script>
+		<script src="jspsych-6/plugins/jspsych-survey-text.js"></script>
+        <link href="jspsych-6/css/jspsych.css" rel="stylesheet" type="text/css"></link>
+    </head>
+    <body></body>
+    <script>
+		
+		/**
+		 * Randomize array element order in-place.
+		 * Using Durstenfeld shuffle algorithm.
+		 */
+		function shuffleArray(array) {
+		    for (var i = array.length - 1; i > 0; i--) {
+		        var j = Math.floor(Math.random() * (i + 1));
+		        var temp = array[i];
+		        array[i] = array[j];
+		        array[j] = temp;
+		    }
+		}
+
+	/* Timeline */
+	    var timeline = [];
+
+	    /* Willommen */
+	    var welcome = {
+	      type: "html-keyboard-response",
+	      stimulus: "</p><b>Herzlich willkommen zum Experiment!</b></p>" +
+			 "</p>Um zu beginnen, klicken Sie bitte auf die Leertaste.</p>",
+	    };
+	    timeline.push(welcome);
+		
+		/* VP Code */
+	    var VPCode = {
+	        type: 'survey-text',
+	        questions: [
+			{prompt: 'Was ist Ihr VPCode?', value: '', columns: 50}
+	        ]
+	    };
+		timeline.push(VPCode)
+		
+		/* Instruktion */
+		var instructions = {
+		  type: "html-keyboard-response",
+		  stimulus: "<p> Instruktion </p>",
+		};
+		timeline.push(instructions);
+
+		/* Videotrials */
+		var video_files = [
+			'ball_jump_hol.mp4',
+			'bike_big_seq.mp4',
+			'bike_many_hol.mp4',
+			'bike_one_seq.mp4',
+			'bike_small_hol.mp4',
+			'cat_jump_seq.mp4',
+			'cat_run_hol.mp4',
+			'comb_big_seq.mp4',
+			'comb_many_hol.mp4',
+			'comb_one_seq.mp4',
+			'comb_small_hol.mp4',
+			'duck_big_seq.mp4',
+			'duck_jump_hol.mp4',
+			'duck_many_seq.mp4',
+			'duck_one_hol.mp4',
+			'duck_run_seq.mp4',
+			'duck_small_hol.mp4',
+			'elephant_jump_seq.mp4',
+			'elephant_run_hol.mp4',
+			'fork_big_seq.mp4',
+			'fork_many_hol.mp4',
+			'fork_one_seq.mp4',
+			'fork_small_hol.mp4',
+			'hammer_big_seq.mp4',
+			'hammer_many_hol.mp4',
+			'hammer_one_seq.mp4',
+			'hammer_small_hol.mp4',
+			'monkey_jump_seq.mp4'
+		]
+		
+		shuffleArray(video_files)
+		
+		for (i = 0; i < video_files.length; i++)
+		{
+	    	var video_trial = {
+				type: 'video',
+				data: { video_type: 'A'},
+	      	  width: 640,
+			  height: 800,
+	      	  start: 0,
+	      	  stop: 10,
+			  controls: true,
+		      sources: [video_files[i]],
+	    	};
+			
+			var repeat_trial = {
+			    type: 'html-keyboard-response',
+			    stimulus: '</p> Um das Video zu wiederholen, dr&uuml;cken Sie bitte die <b>Taste R</b>. </p>' +
+				' Um weiterzufahren, dr&uuml;cken Sie bitte die <b>Taste C</b>.'
+			};
+			
+			var loop_node = {
+			    timeline: [video_trial, repeat_trial],
+			    loop_function: function(data){
+					console.log(data.values())
+			        if(jsPsych.pluginAPI.convertKeyCharacterToKeyCode('r') == data.values()[1].key_press){
+			            return true;
+			        } else {
+			            return false;
+			        }
+			    }
+			};
+			
+		    var survey_block = {
+		        type: 'survey-text',
+				data: { survey_type: 'A'},
+		        questions: [
+				{prompt: 'Was war wohl auf dem Bild zu sehen?', value: '', columns: 50}
+		        ]
+		    };
+			timeline.push(loop_node)
+			timeline.push(survey_block)
+		}
+		
+	    /* Verabschiedung */
+		var Verabschiedung = {
+		  type: "html-keyboard-response",
+		  stimulus: "<p><b>Vielen Dank f\u00fcr die Teilnahme!</b></p> ",
+		};
+		timeline.push(Verabschiedung);
+		
+		/* Starten des Experiments */
+		jsPsych.init({
+		  timeline: timeline,
+		  on_finish: function() {
+		    jsPsych.data.get().localSave("CSV");
+		  }
+		});
+		
+    </script>
+</html>
