@@ -24,9 +24,7 @@ library(SnowballC)
 library(wordcloud)
 library(RColorBrewer)
 
-library(xlsx)
-
-
+library(readr)
 ```
 
 
@@ -146,7 +144,8 @@ data_file_stimulus <- raw_data %>%
          responses = str_replace(responses, "[^[:alnum:]]","")) %>%
    group_by(id, object, predicate,condition, responses) %>%
   unite(stimulus_nc, object, predicate, sep = "_") %>%         ## combine obj + pre --> stim 
-  arrange(stimulus_nc)                                         ## arrange after stimulus
+  arrange(stimulus_nc) %>%  ## arrange after stimulus
+  select(-condition)   
 
 data_file_stimulus
 
