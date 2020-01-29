@@ -6,6 +6,6 @@
 *.tex
 *.fff
 
-/experiments/video/*
-
+/experiment/video/*
+/experiment/jspsych-6/*
 
