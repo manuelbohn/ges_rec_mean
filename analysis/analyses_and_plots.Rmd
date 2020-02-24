@@ -1,0 +1,280 @@
+---
+title: "Plots and models"
+output: html_document
+---
+
+1. Wd + files
+```{r setup, include=FALSE}
+library(tidyverse)
+library(ggplot2)
+library(ggthemes)
+library(ggpubr)
+library(exactRankTests)
+library(lme4)
+
+##library(psychometric)
+##library(multilevel)
+##library(nlme)
+
+##library(Rmisc)
+##library(lattice)
+##library(plyr)
+
+## library(devtools)
+## devtools::install_github("langcog/langcog")
+
+
+setwd("~/Documents/ges_rec_mean/analysis")
+
+data <- read.csv2("data_file_stimulus.csv")
+data
+```
+
+
+2. Plots hol versus seq Mittelwerte
+```{r cars}
+plot_1 <- ggplot(data = data, aes(x = condition, col = object_str)) +
+  labs (x = "condition", y = "object_str") +
+  geom_bar() 
+
+plot_2 <- ggplot(data = data, aes(x = condition, col = feature_str)) +
+  labs (x = "condition", y = "feature_str") +
+  geom_bar() 
+
+plot_3 <- ggplot(data = data, aes(x = condition, col = object_se)) +
+  labs (x = "condition", y = "object_se") +
+  geom_bar() 
+
+plot_4 <- ggplot(data = data, aes(x = condition, col = feature_se)) +
+  labs (x = "condition", y = "feature_se") +
+  geom_bar() 
+
+plot_1
+plot_2
+plot_3
+plot_4
+
+```
+
+
+3. Percent correct, seperate for each stimulus
+
+```{r pressure, echo=FALSE}
+
+### dependent variable: rel versus (irr + ne)
+data_rel_not <- data %>%
+  add_column(data$stimulus_nc) %>%
+  separate(stimulus_nc, c("object", "predicate")) %>%
+  mutate(object_str = ifelse(object_str == "rel", "1", "0")) %>%
+  mutate(object_str = as.numeric(as.character(object_str))) %>%
+  mutate(feature_str = ifelse(feature_str == "rel", "1", "0")) %>%
+  mutate(feature_str = as.numeric(as.character(feature_str))) %>%
+  mutate(object_se = ifelse(object_se == "rel", "1", "0")) %>%
+  mutate(object_se = as.numeric(as.character(object_se))) %>%
+  mutate(feature_se = ifelse(feature_se == "rel", "1", "0")) %>%
+  mutate(feature_se = as.numeric(as.character(feature_se)))
+ 
+
+## percent correct for feature_str separate for each object stimulus 
+d1os <- data_rel_not %>%
+  mutate(condition = ifelse(condition == "hol","holistic","sequential")) %>%
+  group_by(condition, object, id) %>%
+  summarise(object_str = mean(object_str))
+
+d2os <- data_rel_not %>%
+  mutate(condition = ifelse(condition == "hol","holistic","sequential")) %>%
+  group_by(condition, object) %>%
+  summarise(object_str = mean(object_str))
+
+plot_5 <- ggplot() +
+  geom_jitter(data = d1os, aes(x = object, y = object_str, col = condition), position = position_jitterdodge(jitter.width = .2, jitter.height = 0.05,dodge.width = 0.5), alpha = .3)+
+  geom_pointrange(data = d2os,aes(x = object, y = object_str, col = condition, ymin = 0, ymax = 1), 
+                  position = position_dodge(width = .5), size = 0.6, pch = 5) +
+  guides(alpha = F)+
+  labs(x="Picture")+
+  scale_y_continuous(name = "Proportion Correct", limits = c(-0.05,1.05))+
+  theme_few() + 
+  scale_colour_solarized()
+
+plot_5
+
+
+## percent correct for feature_str separate for each object stimulus
+d1fs <- data_rel_not %>%
+  mutate(condition = ifelse(condition == "hol","holistic","sequential")) %>%
+  group_by(condition, predicate, id) %>%
+  summarise(feature_str = mean(feature_str))
+
+d2fs <- data_rel_not %>%
+  mutate(condition = ifelse(condition == "hol","holistic","sequential")) %>%
+  group_by(condition, predicate) %>%
+  summarise(feature_str = mean(feature_str))
+
+plot_6 <- ggplot() +
+  geom_jitter(data = d1fs, aes(x = predicate, y = feature_str, col = condition), position = position_jitterdodge(jitter.width = .2, jitter.height = 0.05,dodge.width = 0.5), alpha = .3)+
+  geom_pointrange(data = d2fs,aes(x = predicate, y = feature_str, col = condition, ymin = 0, ymax = 1), 
+                  position = position_dodge(width = .5), size = 0.6, pch = 5) +
+  guides(alpha = F)+
+  labs(x="Picture")+
+  scale_y_continuous(name = "Proportion Correct", limits = c(-0.05,1.05))+
+  theme_few() + 
+  scale_colour_solarized()
+
+plot_6
+
+
+## percent correct for object_se separate for each object stimulus
+d1os <- data_rel_not %>%
+  mutate(condition = ifelse(condition == "hol","holistic","sequential")) %>%
+  group_by(condition, object, id) %>%
+  summarise(object_se = mean(object_se))
+
+d2os <- data_rel_not %>%
+  mutate(condition = ifelse(condition == "hol","holistic","sequential")) %>%
+  group_by(condition, object) %>%
+  summarise(object_se = mean(object_se))
+
+plot_7 <- ggplot() +
+  geom_jitter(data = d1os, aes(x = object, y = object_se, col = condition), position = position_jitterdodge(jitter.width = .2, jitter.height = 0.05,dodge.width = 0.5), alpha = .3)+
+  geom_pointrange(data = d2os,aes(x = object, y = object_se, col = condition, ymin = 0, ymax = 1), 
+                  position = position_dodge(width = .5), size = 0.6, pch = 5) +
+  guides(alpha = F)+
+  labs(x="Picture")+
+  scale_y_continuous(name = "Proportion Correct", limits = c(-0.05,1.05))+
+  theme_few() + 
+  scale_colour_solarized()
+
+plot_7
+
+
+### percent correct for feature_se separate for each object stimulus
+d1fs <- data_rel_not %>%
+  mutate(condition = ifelse(condition == "hol","holistic","sequential")) %>%
+  group_by(condition, predicate, id) %>%
+  summarise(feature_se = mean(feature_se))
+
+d2fs <- data_rel_not %>%
+  mutate(condition = ifelse(condition == "hol","holistic","sequential")) %>%
+  group_by(condition, predicate) %>%
+  summarise(feature_se = mean(feature_se))
+
+plot_8 <- ggplot() +
+  geom_jitter(data = d1fs, aes(x = predicate, y = feature_se, col = condition), position = position_jitterdodge(jitter.width = .2, jitter.height = 0.05,dodge.width = 0.5), alpha = .3)+
+  geom_pointrange(data = d2fs,aes(x = predicate, y = feature_se, col = condition, ymin = 0, ymax = 1), 
+                  position = position_dodge(width = .5), size = 0.6, pch = 5) +
+  guides(alpha = F)+
+  labs(x="Picture")+
+  scale_y_continuous(name = "Proportion Correct", limits = c(-0.05,1.05))+
+  theme_few() + 
+  scale_colour_solarized()
+
+plot_8
+
+#######
+#### d2os <- data_obj_str %>%
+#  mutate(condition = ifelse(condition == "hol","holistic","sequential")) %>%
+#  group_by(condition, object) %>%
+#  summarise(object_str = mean(object_str), ci=0.95)
+
+## installation of langcog failed
+# d2os <- d1os %>%
+#   multi_boot_standard(col = "object_str")
+
+# d3os <- d1os %>%
+#  group_by(condition, id)%>%
+#  summarise(object_str = mean(object_str)) %>%
+# multi_boot_standard(col = "object_str")%>%
+#  mutate(stimulus = "Overall")
+
+## d4.p4 <- d4.p2 %>%
+#  group_by(Age, block, dyad_id)%>%
+#  summarise(comp = mean(comp)) %>%
+#  multi_boot_standard(col = "comp")%>%
+#  mutate(stimulus = "Overall")
+```
+
+
+4. two.sided t.test (rel versus not) 
+
+```{r}
+## feature_str
+t.test(feature_str ~ condition,
+       alternative = c("two.sided"), data_fea_str)
+
+## object_str
+t.test(object_str ~ condition,
+       alternative = c("two.sided"), data_obj_str)
+```
+
+
+
+
+
+
+4. Calculate baysian models
+
+feature content: 
+
+
+
+```{r}
+
+
+## data file models
+data_length <- data %>%
+  add_column(data$stimulus_nc) %>%
+  separate(stimulus_nc, c("object", "predicate")) %>%
+  mutate(responses = ifelse(responses == "", NA, as.character(responses)))%>%
+  mutate(characters = nchar(responses)) %>%
+  mutate(characters = as.numeric(as.character(characters)))
+
+data_of_structure <- data %>%
+  add_column(data$stimulus_nc) %>%
+  separate(stimulus_nc, c("object", "predicate")) %>%
+  mutate(object_str = ifelse(object_str == "ne", "0", "1")) %>%
+  mutate(object_str = as.numeric(as.character(object_str))) %>%
+  mutate(feature_str = ifelse(feature_str == "ne", "0", "1")) %>%
+  mutate(feature_str = as.numeric(as.character(feature_str))) %>%
+  mutate(obj_fea = ifelse(object_str == 1 & feature_str == 1, "1", "0")) %>%
+  mutate(obj_fea = as.numeric(as.character(obj_fea)))
+  
+  
+data_fea_content <- data %>%
+  add_column(data$stimulus_nc) %>%
+  separate(stimulus_nc, c("object", "predicate")) %>%
+  mutate(feature_str = ifelse(feature_str == "rel", "1", "0")) %>%
+  mutate(feature_str = as.numeric(as.character(feature_str)))
+
+
+  
+### length  ## hier keine binäre Codierung, Modell funktioniert nicht
+m1_l <- glmer(characters ~ condition * predicate + (condition * predicate | id) + (1 | data$stimulus_nc), family = binomial, data = data_length,control=glmerControl(optimizer="bobyqa",optCtrl=list(maxfun=2e5)))
+
+m2_l <- glmer(characters ~ condition + predicate + (condition * predicate | id) + (1 | data$stimulus_nc), family = binomial, data = data_length,control=glmerControl(optimizer="bobyqa",optCtrl=list(maxfun=2e5)))
+
+m3_l <- glmer(characters ~ predicate + (condition * predicate | id) + (1 | data$stimulus_nc), family = binomial, data = data_length,control=glmerControl(optimizer="bobyqa",optCtrl=list(maxfun=2e5)))
+
+
+### object-feature structure
+m1_of <- glmer(obj_fea ~ condition * predicate + (condition * predicate | id) + (1 | data$stimulus_nc), family = binomial, data = data_of_structure,control=glmerControl(optimizer="bobyqa",optCtrl=list(maxfun=2e5)))
+
+m2_of <- glmer(obj_fea ~ condition + predicate + (condition * predicate | id) + (1 | data$stimulus_nc), family = binomial, data = data_of_structure,control=glmerControl(optimizer="bobyqa",optCtrl=list(maxfun=2e5)))
+
+m3_of <- glmer(obj_fea ~ predicate + (condition * predicate | id) + (1 | data$stimulus_nc), family = binomial, data = data_of_structure,control=glmerControl(optimizer="bobyqa",optCtrl=list(maxfun=2e5)))
+
+
+### feature content
+m1_fc <- glmer(feature_str ~ condition * predicate + (condition * predicate | id) + (1 | data$stimulus_nc), family = binomial, data = data_fea_content,control=glmerControl(optimizer="bobyqa",optCtrl=list(maxfun=2e5)))
+
+p_m1_fc <- drop1(m1_fc, test = "Chisq")
+
+m2_fc <- glmer(feature_str ~ condition + predicate + (condition * predicate | id) + (1 | data$stimulus_nc), family = binomial, data = data_fea_content,control=glmerControl(optimizer="bobyqa",optCtrl=list(maxfun=2e5)))
+
+m3_fc <- glmer(feature_str ~ predicate + (condition * predicate | id) + (1 | data$stimulus_nc), family = binomial, data = data_fea_content,control=glmerControl(optimizer="bobyqa",optCtrl=list(maxfun=2e5)))
+
+```
+
+
+
+
+
