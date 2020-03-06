@@ -81,6 +81,7 @@ d1os <- data_rel_not %>%
   group_by(condition, object, id) %>%
   summarise(object_str = mean(object_str))
 
+# ?? CI
 d2os <- data_rel_not %>%
   mutate(condition = ifelse(condition == "hol","holistic","sequential")) %>%
   group_by(condition, object) %>%
@@ -215,8 +216,6 @@ t.test(object_str ~ condition,
 
 feature content: 
 
-
-
 ```{r}
 
 
@@ -271,6 +270,95 @@ p_m1_fc <- drop1(m1_fc, test = "Chisq")
 m2_fc <- glmer(feature_str ~ condition + predicate + (condition * predicate | id) + (1 | data$stimulus_nc), family = binomial, data = data_fea_content,control=glmerControl(optimizer="bobyqa",optCtrl=list(maxfun=2e5)))
 
 m3_fc <- glmer(feature_str ~ predicate + (condition * predicate | id) + (1 | data$stimulus_nc), family = binomial, data = data_fea_content,control=glmerControl(optimizer="bobyqa",optCtrl=list(maxfun=2e5)))
+
+```
+
+
+5. Word Clouds -  seperate word cloud for each object and predicate
+
+```{r}
+## create data file for wordclouds
+
+data_file <- read.csv2("data_file.csv")
+
+data_words <- read.csv2("words_data_codiert.v3.csv")
+
+
+object <- data_words %>%
+  filter(type == "object") %>%
+  select(value) 
+
+predicate <- data_words %>%
+  filter(type == "feature") %>%
+  select(value)
+
+data_wordcloud <- data_file %>%
+  mutate(type = ifelse(value %in% "object", "object"),
+         ifelse(value %in% "feature", "feature", "IR"))
+
+
+############
+data_wordcloud <- data_file %>%
+  mutate(pmatch(value, object, nomatch = NA_integer_, duplicates.ok = FALSE))
+
+data_wordcloud <- data_file %>%
+  mutate(type = ifelse(is.element(value, object) == TRUE, "object"))
+
+data_wordcloud <- data_file %>%
+  mutate(type = ifelse(value %in% "object", "object"))
+
+data_wordcloud <- data_file %>%
+  mutate_each(type = ifelse(value %in% "object", "object"))
+
+data_wordcloud <- data_file %>%
+  mutate(type = ifelse("value" %in% object, "object"))
+
+is.element(x, y)
+
+
+
+data_wordcloud <- data_file %>%
+  mutate(pmatch(value, object, nomatch = NA_integer_, duplicates.ok = FALSE))
+
+
+pmatch(x, table, nomatch = NA_integer_, duplicates.ok = FALSE)
+
+
+if (x < 5) 1 else 2
+
+
+
+##########
+######  a <- match(data_file$type, object, nomatch = NA_integer_, incomparables = NULL)
+
+
+jump <- data_file %>%
+  filter(predicate == "jump") %>%
+  group_by(value) %>%
+  summarise(freq = n()) %>%
+  arrange(-freq)
+
+jump
+
+jump <- data_file_pretest %>%
+  filter(predicate == "jump") %>%
+  pull(value) %>%
+  unique()
+
+jump
+
+
+oap <- c("ball", "bike", "cat", "comb", "duck", "elephant", "fork", "hammer", "monkey", "many", "one", "small", "big", "jump", "run")
+
+docs <- c("Hund", "Katze", "Maus", "Hund", "Hase", "Kind", "Hase", "Hase", "Hase", "Hase", "Hase")
+
+
+## generate wordclouds
+wordcloud(c(docs), seq(1, 1000, len = 62),
+          colors=brewer.pal(8, "Dark2"))
+
+wordcloud(c(docs), seq(1, 1000, len = 62),
+          colors=brewer.pal(8, "Dark2"))
 
 ```
 
