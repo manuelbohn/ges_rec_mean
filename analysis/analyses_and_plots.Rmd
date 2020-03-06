@@ -200,11 +200,11 @@ plot_8
 ```{r}
 ## feature_str
 t.test(feature_str ~ condition,
-       alternative = c("two.sided"), data_fea_str)
+       alternative = c("two.sided"), data_rel_not)
 
 ## object_str
 t.test(object_str ~ condition,
-       alternative = c("two.sided"), data_obj_str)
+       alternative = c("two.sided"), data_rel_not)
 ```
 
 
@@ -281,7 +281,7 @@ m3_fc <- glmer(feature_str ~ predicate + (condition * predicate | id) + (1 | dat
 
 data_file <- read.csv2("data_file.csv")
 
-data_words <- read.csv2("words_data_codiert.v3.csv")
+data_words <- read.csv2("Words_data_codiert.csv")
 
 
 object <- data_words %>%
