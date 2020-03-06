@@ -36,7 +36,8 @@ to_select <- gram_data %>%
   summarise(n = n())
 
 
-write_csv(to_select, "../video_select.csv")
+write_excel_csv2(to_select, "../video_select.csv")
+
 ```
 
 

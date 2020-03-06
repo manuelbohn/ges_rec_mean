@@ -11,6 +11,7 @@ library(ggthemes)
 library(ggpubr)
 library(exactRankTests)
 library(lme4)
+library(langcog)
 
 ##library(psychometric)
 ##library(multilevel)
@@ -22,9 +23,6 @@ library(lme4)
 
 ## library(devtools)
 ## devtools::install_github("langcog/langcog")
-
-
-setwd("~/Documents/ges_rec_mean/analysis")
 
 data <- read.csv2("data_file_stimulus.csv")
 data
@@ -63,18 +61,19 @@ plot_4
 
 ### dependent variable: rel versus (irr + ne)
 data_rel_not <- data %>%
-  add_column(data$stimulus_nc) %>%
-  separate(stimulus_nc, c("object", "predicate")) %>%
-  mutate(object_str = ifelse(object_str == "rel", "1", "0")) %>%
-  mutate(object_str = as.numeric(as.character(object_str))) %>%
+  separate(stimulus_nc, c("object", "predicate"), remove = F) %>%
+  mutate(object_str = ifelse(object_str == "rel", "1", "0"),
+         object_str = as.numeric(as.character(object_str))) %>%
   mutate(feature_str = ifelse(feature_str == "rel", "1", "0")) %>%
   mutate(feature_str = as.numeric(as.character(feature_str))) %>%
   mutate(object_se = ifelse(object_se == "rel", "1", "0")) %>%
   mutate(object_se = as.numeric(as.character(object_se))) %>%
   mutate(feature_se = ifelse(feature_se == "rel", "1", "0")) %>%
   mutate(feature_se = as.numeric(as.character(feature_se)))
- 
+``` 
 
+
+```{r pressure, echo=FALSE}
 ## percent correct for feature_str separate for each object stimulus 
 d1os <- data_rel_not %>%
   mutate(condition = ifelse(condition == "hol","holistic","sequential")) %>%
@@ -192,6 +191,26 @@ plot_8
 #  summarise(comp = mean(comp)) %>%
 #  multi_boot_standard(col = "comp")%>%
 #  mutate(stimulus = "Overall")
+
+
+plot1 <- data_rel_not%>%
+  select(-X, - repetitions, -X.1)%>%
+  gather(dimension, correct,-condition, -id, -stimulus_nc,-object, -predicate, -responses)
+
+plot2 <- plot1%>%
+  group_by(condition, dimension)%>%
+  multi_boot_standard(col = "correct")
+
+
+ggplot() +
+  geom_jitter(data = plot1, aes(x = dimension, y = correct, col = condition), position = position_jitterdodge(jitter.width = .2, jitter.height = 0.05,dodge.width = 0.5), alpha = .3)+
+  geom_pointrange(data = plot2,aes(x = dimension, y = mean, col = condition, ymin = ci_lower, ymax = ci_upper), 
+                  position = position_dodge(width = .5), size = 0.6, pch = 5) +
+  guides(alpha = F)+
+  labs(x="Picture")+
+  scale_y_continuous(name = "Proportion Correct", limits = c(-0.05,1.05))+
+  theme_few() + 
+  scale_colour_solarized()
 ```
 
 
