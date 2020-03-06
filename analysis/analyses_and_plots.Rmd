@@ -12,6 +12,7 @@ library(ggpubr)
 library(exactRankTests)
 library(lme4)
 library(langcog)
+library(brms)
 
 ##library(psychometric)
 ##library(multilevel)
@@ -239,6 +240,8 @@ feature content:
 
 
 ## data file models
+
+# use number of words instead
 data_length <- data %>%
   add_column(data$stimulus_nc) %>%
   separate(stimulus_nc, c("object", "predicate")) %>%
@@ -247,13 +250,15 @@ data_length <- data %>%
   mutate(characters = as.numeric(as.character(characters)))
 
 data_of_structure <- data %>%
-  add_column(data$stimulus_nc) %>%
-  separate(stimulus_nc, c("object", "predicate")) %>%
+  separate(stimulus_nc, c("object", "predicate"), remove = F) %>%
   mutate(object_str = ifelse(object_str == "ne", "0", "1")) %>%
   mutate(object_str = as.numeric(as.character(object_str))) %>%
   mutate(feature_str = ifelse(feature_str == "ne", "0", "1")) %>%
   mutate(feature_str = as.numeric(as.character(feature_str))) %>%
   mutate(obj_fea = ifelse(object_str == 1 & feature_str == 1, "1", "0")) %>%
+   mutate(property = ifelse(predicate == "jump" | predicate == "run", "movement",
+                           ifelse(predicate == "big" | predicate == "small", "size","number")))%>%
+  mutate(class = ifelse(object == "ball" | object == "bike" | object == "comb" | object == "bike" | object == "fork" | object == "hammer", "object","animal"))%>%
   mutate(obj_fea = as.numeric(as.character(obj_fea)))
   
   
@@ -263,10 +268,42 @@ data_fea_content <- data %>%
   mutate(feature_str = ifelse(feature_str == "rel", "1", "0")) %>%
   mutate(feature_str = as.numeric(as.character(feature_str)))
 
+# Bayesian model object-feature structure
 
-  
+m1_of <- brm(obj_fea ~ condition * property + (condition * property | id) + (condition | stimulus_nc),
+                    data = data_of_structure, family = bernoulli(),
+          control = list(adapt_delta = 0.99, max_treedepth = 20),
+          sample_prior = F,
+          cores = 4,
+          chains = 4,
+          inits = 0,
+          iter = 5000)%>%
+  add_criterion("waic")%>%
+  saveRDS(.,"../saves/m1_of.rds")
+
+m1_of <- readRDS("../saves/m1_of.rds")
+
+# ... additional models
+
+# model comparison 
+loo_compare(m1_of, m2_of, m3_of, criterion = "waic")%>%
+  as.data.frame() %>%
+  tibble::rownames_to_column("Predictors")%>%
+  mutate(
+    Predictors = recode(Predictors, 
+                   m1_of = "condition * Condition", 
+                   m2_of = "Age + Condition",
+                   m3_of = "Age"),
+    weight = exp(elpd_waic) / sum(exp(elpd_waic)),
+    weight = round(weight, 2),
+    WAIC = round(waic, 2),
+    SE = round(se_waic,2))%>%
+  select(Predictors, WAIC, SE, weight)
+
+
+
 ### length  ## hier keine binäre Codierung, Modell funktioniert nicht
-m1_l <- glmer(characters ~ condition * predicate + (condition * predicate | id) + (1 | data$stimulus_nc), family = binomial, data = data_length,control=glmerControl(optimizer="bobyqa",optCtrl=list(maxfun=2e5)))
+m1_l <- glmer(characters ~ condition + (condition * predicate | id) + (1 | stimulus_nc), family = binomial, data = data_length,control=glmerControl(optimizer="bobyqa",optCtrl=list(maxfun=2e5)))
 
 m2_l <- glmer(characters ~ condition + predicate + (condition * predicate | id) + (1 | data$stimulus_nc), family = binomial, data = data_length,control=glmerControl(optimizer="bobyqa",optCtrl=list(maxfun=2e5)))
 
@@ -298,23 +335,14 @@ m3_fc <- glmer(feature_str ~ predicate + (condition * predicate | id) + (1 | dat
 ```{r}
 ## create data file for wordclouds
 
-data_file <- read.csv2("data_file.csv")
+data_file <- read.csv2("data_file.csv")%>%
+  select(-X)
 
-data_words <- read.csv2("Words_data_codiert.csv")
-
-
-object <- data_words %>%
-  filter(type == "object") %>%
-  select(value) 
-
-predicate <- data_words %>%
-  filter(type == "feature") %>%
-  select(value)
+data_words <- read.csv2("Words_data_codiert.csv")%>%
+  select(-X)
 
 data_wordcloud <- data_file %>%
-  mutate(type = ifelse(value %in% "object", "object"),
-         ifelse(value %in% "feature", "feature", "IR"))
-
+  left_join(data_words)
 
 ############
 data_wordcloud <- data_file %>%
