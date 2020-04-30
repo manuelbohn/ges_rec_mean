@@ -3,7 +3,7 @@ title: "Plots and models"
 output: html_document
 ---
 
-1. Wd + files
+1. Load packages and data file
 ```{r setup, include=FALSE}
 library(tidyverse)
 library(ggplot2)
@@ -13,6 +13,10 @@ library(exactRankTests)
 library(lme4)
 library(langcog)
 library(brms)
+library(wordcloud)
+library(RColorBrewer)
+library(patchwork)
+library(ngram)
 
 ##library(psychometric)
 ##library(multilevel)
@@ -30,7 +34,8 @@ data
 ```
 
 
-2. Plots hol versus seq Mittelwerte
+2. Plots
+2.1. Plots (hol versus seq) seperate for object_str, object_se, feature_str, feature_se (with: rel, irrel, ne)
 ```{r cars}
 plot_1 <- ggplot(data = data, aes(x = condition, col = object_str)) +
   labs (x = "condition", y = "object_str") +
@@ -56,152 +61,46 @@ plot_4
 ```
 
 
-3. Percent correct, seperate for each stimulus
-
+2.2. Create binary dependent variables 
 ```{r pressure, echo=FALSE}
 
-### dependent variable: rel versus (irr + ne)
+## dependent variable: code 'rel' = 1 and 'irr or ne' = 0 -> enables comparison with respect to relevant answers (relevant object/feature or not) 
 data_rel_not <- data %>%
   separate(stimulus_nc, c("object", "predicate"), remove = F) %>%
   mutate(object_str = ifelse(object_str == "rel", "1", "0"),
-         object_str = as.numeric(as.character(object_str))) %>%
-  mutate(feature_str = ifelse(feature_str == "rel", "1", "0")) %>%
-  mutate(feature_str = as.numeric(as.character(feature_str))) %>%
-  mutate(object_se = ifelse(object_se == "rel", "1", "0")) %>%
-  mutate(object_se = as.numeric(as.character(object_se))) %>%
-  mutate(feature_se = ifelse(feature_se == "rel", "1", "0")) %>%
-  mutate(feature_se = as.numeric(as.character(feature_se)))
+         object_str = as.numeric(as.character(object_str)),
+         feature_str = ifelse(feature_str == "rel", "1", "0"),
+         feature_str = as.numeric(as.character(feature_str)),
+         object_se = ifelse(object_se == "rel", "1", "0"),
+         object_se = as.numeric(as.character(object_se)),
+         feature_se = ifelse(feature_se == "rel", "1", "0"),
+         feature_se = as.numeric(as.character(feature_se)))
+
+## dependent variable: code 'rel + irrel' = 1 and 'ne' = 0 -> enables comparison with respect to existence of an answer (does an object/feature exist or not)
+data_ex_ne <- data %>%
+  separate(stimulus_nc, c("object", "predicate"), remove = F) %>%
+  mutate(object_str = ifelse(object_str == "ne", "0", "1"),
+         object_str = as.numeric(as.character(object_str)),
+         feature_str = ifelse(feature_str == "ne", "0", "1"),
+         feature_str = as.numeric(as.character(feature_str)),
+         object_se = ifelse(object_se == "ne", "0", "1"),
+         object_se = as.numeric(as.character(object_se)),
+         feature_se = ifelse(feature_se == "ne", "0", "1"),
+         feature_se = as.numeric(as.character(feature_se)))
 ``` 
 
 
-```{r pressure, echo=FALSE}
-## percent correct for feature_str separate for each object stimulus 
-d1os <- data_rel_not %>%
-  mutate(condition = ifelse(condition == "hol","holistic","sequential")) %>%
-  group_by(condition, object, id) %>%
-  summarise(object_str = mean(object_str))
 
-# ?? CI
-d2os <- data_rel_not %>%
-  mutate(condition = ifelse(condition == "hol","holistic","sequential")) %>%
-  group_by(condition, object) %>%
-  summarise(object_str = mean(object_str))
-
-plot_5 <- ggplot() +
-  geom_jitter(data = d1os, aes(x = object, y = object_str, col = condition), position = position_jitterdodge(jitter.width = .2, jitter.height = 0.05,dodge.width = 0.5), alpha = .3)+
-  geom_pointrange(data = d2os,aes(x = object, y = object_str, col = condition, ymin = 0, ymax = 1), 
-                  position = position_dodge(width = .5), size = 0.6, pch = 5) +
-  guides(alpha = F)+
-  labs(x="Picture")+
-  scale_y_continuous(name = "Proportion Correct", limits = c(-0.05,1.05))+
-  theme_few() + 
-  scale_colour_solarized()
-
-plot_5
-
-
-## percent correct for feature_str separate for each object stimulus
-d1fs <- data_rel_not %>%
-  mutate(condition = ifelse(condition == "hol","holistic","sequential")) %>%
-  group_by(condition, predicate, id) %>%
-  summarise(feature_str = mean(feature_str))
-
-d2fs <- data_rel_not %>%
-  mutate(condition = ifelse(condition == "hol","holistic","sequential")) %>%
-  group_by(condition, predicate) %>%
-  summarise(feature_str = mean(feature_str))
-
-plot_6 <- ggplot() +
-  geom_jitter(data = d1fs, aes(x = predicate, y = feature_str, col = condition), position = position_jitterdodge(jitter.width = .2, jitter.height = 0.05,dodge.width = 0.5), alpha = .3)+
-  geom_pointrange(data = d2fs,aes(x = predicate, y = feature_str, col = condition, ymin = 0, ymax = 1), 
-                  position = position_dodge(width = .5), size = 0.6, pch = 5) +
-  guides(alpha = F)+
-  labs(x="Picture")+
-  scale_y_continuous(name = "Proportion Correct", limits = c(-0.05,1.05))+
-  theme_few() + 
-  scale_colour_solarized()
-
-plot_6
-
-
-## percent correct for object_se separate for each object stimulus
-d1os <- data_rel_not %>%
-  mutate(condition = ifelse(condition == "hol","holistic","sequential")) %>%
-  group_by(condition, object, id) %>%
-  summarise(object_se = mean(object_se))
-
-d2os <- data_rel_not %>%
-  mutate(condition = ifelse(condition == "hol","holistic","sequential")) %>%
-  group_by(condition, object) %>%
-  summarise(object_se = mean(object_se))
-
-plot_7 <- ggplot() +
-  geom_jitter(data = d1os, aes(x = object, y = object_se, col = condition), position = position_jitterdodge(jitter.width = .2, jitter.height = 0.05,dodge.width = 0.5), alpha = .3)+
-  geom_pointrange(data = d2os,aes(x = object, y = object_se, col = condition, ymin = 0, ymax = 1), 
-                  position = position_dodge(width = .5), size = 0.6, pch = 5) +
-  guides(alpha = F)+
-  labs(x="Picture")+
-  scale_y_continuous(name = "Proportion Correct", limits = c(-0.05,1.05))+
-  theme_few() + 
-  scale_colour_solarized()
-
-plot_7
-
-
-### percent correct for feature_se separate for each object stimulus
-d1fs <- data_rel_not %>%
-  mutate(condition = ifelse(condition == "hol","holistic","sequential")) %>%
-  group_by(condition, predicate, id) %>%
-  summarise(feature_se = mean(feature_se))
-
-d2fs <- data_rel_not %>%
-  mutate(condition = ifelse(condition == "hol","holistic","sequential")) %>%
-  group_by(condition, predicate) %>%
-  summarise(feature_se = mean(feature_se))
-
-plot_8 <- ggplot() +
-  geom_jitter(data = d1fs, aes(x = predicate, y = feature_se, col = condition), position = position_jitterdodge(jitter.width = .2, jitter.height = 0.05,dodge.width = 0.5), alpha = .3)+
-  geom_pointrange(data = d2fs,aes(x = predicate, y = feature_se, col = condition, ymin = 0, ymax = 1), 
-                  position = position_dodge(width = .5), size = 0.6, pch = 5) +
-  guides(alpha = F)+
-  labs(x="Picture")+
-  scale_y_continuous(name = "Proportion Correct", limits = c(-0.05,1.05))+
-  theme_few() + 
-  scale_colour_solarized()
-
-plot_8
-
-#######
-#### d2os <- data_obj_str %>%
-#  mutate(condition = ifelse(condition == "hol","holistic","sequential")) %>%
-#  group_by(condition, object) %>%
-#  summarise(object_str = mean(object_str), ci=0.95)
-
-## installation of langcog failed
-# d2os <- d1os %>%
-#   multi_boot_standard(col = "object_str")
-
-# d3os <- d1os %>%
-#  group_by(condition, id)%>%
-#  summarise(object_str = mean(object_str)) %>%
-# multi_boot_standard(col = "object_str")%>%
-#  mutate(stimulus = "Overall")
-
-## d4.p4 <- d4.p2 %>%
-#  group_by(Age, block, dyad_id)%>%
-#  summarise(comp = mean(comp)) %>%
-#  multi_boot_standard(col = "comp")%>%
-#  mutate(stimulus = "Overall")
-
-
+2.3. Plots - comparing hol versus seq seperate for feature and objects
+```{r}
+## dependent variable: 'rel' = 1 or 'irr + ne' = 0 
 plot1 <- data_rel_not%>%
   select(-X, - repetitions, -X.1)%>%
-  gather(dimension, correct,-condition, -id, -stimulus_nc,-object, -predicate, -responses)
+  gather(dimension, correct,-condition, -id, -stimulus_nc, -object, -predicate, -responses)
 
 plot2 <- plot1%>%
   group_by(condition, dimension)%>%
   multi_boot_standard(col = "correct")
-
 
 ggplot() +
   geom_jitter(data = plot1, aes(x = dimension, y = correct, col = condition), position = position_jitterdodge(jitter.width = .2, jitter.height = 0.05,dodge.width = 0.5), alpha = .3)+
@@ -209,66 +108,241 @@ ggplot() +
                   position = position_dodge(width = .5), size = 0.6, pch = 5) +
   guides(alpha = F)+
   labs(x="Picture")+
-  scale_y_continuous(name = "Proportion Correct", limits = c(-0.05,1.05))+
+  scale_y_continuous(name = "Relevance (Proportion correct)", limits = c(-0.05,1.05))+
+  theme_few() + 
+  scale_colour_solarized()
+
+
+## dependent variable: 'rel + irrel' = 1 or 'ne' = 0
+plot3 <- data_ex_ne%>%
+  select(-X, - repetitions, -X.1)%>%
+  gather(dimension, correct,-condition, -id, -stimulus_nc,-object, -predicate, -responses)
+
+plot4 <- plot3%>%
+  group_by(condition, dimension)%>%
+  multi_boot_standard(col = "correct")
+
+ggplot() +
+  geom_jitter(data = plot3, aes(x = dimension, y = correct, col = condition), position = position_jitterdodge(jitter.width = .2, jitter.height = 0.05,dodge.width = 0.5), alpha = .3)+
+  geom_pointrange(data = plot4,aes(x = dimension, y = mean, col = condition, ymin = ci_lower, ymax = ci_upper), 
+                  position = position_dodge(width = .5), size = 0.6, pch = 5) +
+  guides(alpha = F)+
+  labs(x="Picture")+
+  scale_y_continuous(name = "Existence (Proportion correct)", limits = c(-0.05,1.05))+
   theme_few() + 
   scale_colour_solarized()
 ```
 
 
-4. two.sided t.test (rel versus not) 
-
+2.4. Plots - comparing hol versus seq seperate for each category (object: mov, num, size) and (feature: animal, object)
 ```{r}
-## feature_str
-t.test(feature_str ~ condition,
-       alternative = c("two.sided"), data_rel_not)
+### dependent variable: 'rel' = 1 or 'irr + ne' = 0
 
 ## object_str
-t.test(object_str ~ condition,
-       alternative = c("two.sided"), data_rel_not)
+plot1 <- data_rel_not%>%
+  select(-X, - repetitions, -X.1)%>%
+  gather(dimension, correct,-condition, -id, -stimulus_nc, -object, -predicate, -responses) %>%
+  filter (dimension == "object_str")
+
+plot2 <- plot1%>%
+  group_by(condition, object)%>%
+  multi_boot_standard(col = "correct")
+
+ggplot() +
+  geom_jitter(data = plot1, aes(x = object, y = correct, col = condition), position = position_jitterdodge(jitter.width = .2, jitter.height = 0.05,dodge.width = 0.5), alpha = .3)+
+  geom_pointrange(data = plot2,aes(x = object, y = mean, col = condition, ymin = ci_lower, ymax = ci_upper), 
+                  position = position_dodge(width = .5), size = 0.6, pch = 5) +
+  guides(alpha = F)+
+  labs(x="Object")+
+  scale_y_continuous(name = "Relevance (Proportion correct)", limits = c(-0.05,1.05))+
+  theme_few() + 
+  scale_colour_solarized()
+
+## feature_str
+plot1 <- data_rel_not%>%
+  select(-X, - repetitions, -X.1)%>%
+  gather(dimension, correct,-condition, -id, -stimulus_nc, -object, -predicate, -responses) %>%
+  filter (dimension == "feature_str")
+
+plot2 <- plot1%>%
+  group_by(condition, predicate)%>%
+  multi_boot_standard(col = "correct")
+
+ggplot() +
+  geom_jitter(data = plot1, aes(x = predicate, y = correct, col = condition), position = position_jitterdodge(jitter.width = .2, jitter.height = 0.05,dodge.width = 0.5), alpha = .3)+
+  geom_pointrange(data = plot2,aes(x = predicate, y = mean, col = condition, ymin = ci_lower, ymax = ci_upper), 
+                  position = position_dodge(width = .5), size = 0.6, pch = 5) +
+  guides(alpha = F)+
+  labs(x="Feature")+
+  scale_y_continuous(name = "Relevance (Proportion correct)", limits = c(-0.05,1.05))+
+  theme_few() + 
+  scale_colour_solarized()
+
+
+### dependent variable: 'rel + irrel' = 1 or 'ne' = 0
+
+## object_str
+plot1 <- data_ex_ne%>%
+  select(-X, - repetitions, -X.1)%>%
+  gather(dimension, correct,-condition, -id, -stimulus_nc, -object, -predicate, -responses) %>%
+  filter (dimension == "object_str")
+
+plot2 <- plot1%>%
+  group_by(condition, object)%>%
+  multi_boot_standard(col = "correct")
+
+ggplot() +
+  geom_jitter(data = plot1, aes(x = object, y = correct, col = condition), position = position_jitterdodge(jitter.width = .2, jitter.height = 0.05,dodge.width = 0.5), alpha = .3)+
+  geom_pointrange(data = plot2,aes(x = object, y = mean, col = condition, ymin = ci_lower, ymax = ci_upper), 
+                  position = position_dodge(width = .5), size = 0.6, pch = 5) +
+  guides(alpha = F)+
+  labs(x="Object")+
+  scale_y_continuous(name = "Existence (Proportion correct)", limits = c(-0.05,1.05))+
+  theme_few() + 
+  scale_colour_solarized()
+
+## feature_str
+plot1 <- data_ex_ne%>%
+  select(-X, - repetitions, -X.1)%>%
+  gather(dimension, correct,-condition, -id, -stimulus_nc, -object, -predicate, -responses) %>%
+  filter (dimension == "feature_str")
+
+plot2 <- plot1%>%
+  group_by(condition, predicate)%>%
+  multi_boot_standard(col = "correct")
+
+ggplot() +
+  geom_jitter(data = plot1, aes(x = predicate, y = correct, col = condition), position = position_jitterdodge(jitter.width = .2, jitter.height = 0.05,dodge.width = 0.5), alpha = .3)+
+  geom_pointrange(data = plot2,aes(x = predicate, y = mean, col = condition, ymin = ci_lower, ymax = ci_upper), 
+                  position = position_dodge(width = .5), size = 0.6, pch = 5) +
+  guides(alpha = F)+
+  labs(x="Feature")+
+  scale_y_continuous(name = "Existence (Proportion correct)", limits = c(-0.05,1.05))+
+  theme_few() + 
+  scale_colour_solarized()
+
+```
+
+
+
+3. Calculate baysian models
+
+3.1. Data files for models
+```{r}
+## Number of words per response
+data_wordcount <- data %>%
+  separate(stimulus_nc, c("object", "predicate"), remove = F) %>%
+  mutate(responses = ifelse(responses == "", NA, as.character(responses)))%>%
+  group_by(id, object, predicate, condition, responses)%>%
+  mutate(words = wordcount(responses)) %>%
+  ungroup() %>%
+  mutate(property = ifelse(predicate == "jump" | predicate == "run", "movement",
+                           ifelse(predicate == "big" | predicate == "small", "size","number")),
+         class = ifelse(object == "ball" | object == "bike" | object == "comb" | object == "bike" | object == "fork" | object == "hammer", "object","animal"))
+
+
+## Existence of object AND feature in respone
+data_of_structure <- data %>%
+  separate(stimulus_nc, c("object", "predicate"), remove = F) %>%
+  mutate(object_str = ifelse(object_str == "ne", "0", "1"),
+         object_str = as.numeric(as.character(object_str)),
+         feature_str = ifelse(feature_str == "ne", "0", "1"),
+         feature_str = as.numeric(as.character(feature_str)),
+         obj_fea = ifelse(object_str == 1 & feature_str == 1, "1", "0"),
+         property = ifelse(predicate == "jump" | predicate == "run", "movement",
+                           ifelse(predicate == "big" | predicate == "small", "size","number")),
+         class = ifelse(object == "ball" | object == "bike" | object == "comb" | object == "bike" | object == "fork" | object == "hammer", "object","animal"),
+         obj_fea = as.numeric(as.character(obj_fea)))
+  
+## Feature in response is relevant
+data_fea_content <- data %>%
+  separate(stimulus_nc, c("object", "predicate"), remove = F) %>%
+  mutate (feature_str = ifelse(feature_str == "rel", "1", "0"),
+          feature_str = as.numeric(as.character(feature_str))) %>%
+  mutate(property = ifelse(predicate == "jump" | predicate == "run", "movement",
+                           ifelse(predicate == "big" | predicate == "small", "size","number")),
+         class = ifelse(object == "ball" | object == "bike" | object == "comb" | object == "bike" | object == "fork" | object == "hammer", "object","animal"))
+
 ```
 
 
 
 
-
-
-4. Calculate baysian models
-
-feature content: 
-
+3.2. dependent variable 'length' (hier keine binäre Codierung)
 ```{r}
+## https://www.rdocumentation.org/packages/brms/versions/2.12.0/topics/brmsfamily
+## wsh skew_normal wegen schiefer Verteilung
+
+# m1_l <- glmer(characters ~ condition + (condition * predicate | id) + (1 | stimulus_nc), family = binomial, data = data_length,control=glmerControl(optimizer="bobyqa",optCtrl=list(maxfun=2e5)))
+
+m1_l <- brm(words ~ condition * property + (condition * property | id) + (condition | stimulus_nc),
+                    data = data_wordcount, family = skew_normal(),
+          control = list(adapt_delta = 0.99, max_treedepth = 20),
+          sample_prior = F,
+          cores = 4,
+          chains = 4,
+          inits = 0,
+          iter = 5000)%>%
+  add_criterion("waic")%>%
+  saveRDS(.,"../saves/m1_of.rds")
+
+m1_l <- readRDS("../saves/m1_l.rds")
 
 
-## data file models
+# m2_l <- glmer(characters ~ condition + predicate + (condition * predicate | id) + (1 | data$stimulus_nc), family = binomial, data = data_length,control=glmerControl(optimizer="bobyqa",optCtrl=list(maxfun=2e5)))
 
-# use number of words instead
-data_length <- data %>%
-  add_column(data$stimulus_nc) %>%
-  separate(stimulus_nc, c("object", "predicate")) %>%
-  mutate(responses = ifelse(responses == "", NA, as.character(responses)))%>%
-  mutate(characters = nchar(responses)) %>%
-  mutate(characters = as.numeric(as.character(characters)))
+m2_l <- brm(words ~ condition + property + (condition * property | id) + (condition | stimulus_nc),
+                    data = data_wordcount, family = skew_normal(),
+          control = list(adapt_delta = 0.99, max_treedepth = 20),
+          sample_prior = F,
+          cores = 4,
+          chains = 4,
+          inits = 0,
+          iter = 5000)%>%
+  add_criterion("waic")%>%
+  saveRDS(.,"../saves/m2_l.rds")
 
-data_of_structure <- data %>%
-  separate(stimulus_nc, c("object", "predicate"), remove = F) %>%
-  mutate(object_str = ifelse(object_str == "ne", "0", "1")) %>%
-  mutate(object_str = as.numeric(as.character(object_str))) %>%
-  mutate(feature_str = ifelse(feature_str == "ne", "0", "1")) %>%
-  mutate(feature_str = as.numeric(as.character(feature_str))) %>%
-  mutate(obj_fea = ifelse(object_str == 1 & feature_str == 1, "1", "0")) %>%
-   mutate(property = ifelse(predicate == "jump" | predicate == "run", "movement",
-                           ifelse(predicate == "big" | predicate == "small", "size","number")))%>%
-  mutate(class = ifelse(object == "ball" | object == "bike" | object == "comb" | object == "bike" | object == "fork" | object == "hammer", "object","animal"))%>%
-  mutate(obj_fea = as.numeric(as.character(obj_fea)))
-  
-  
-data_fea_content <- data %>%
-  add_column(data$stimulus_nc) %>%
-  separate(stimulus_nc, c("object", "predicate")) %>%
-  mutate(feature_str = ifelse(feature_str == "rel", "1", "0")) %>%
-  mutate(feature_str = as.numeric(as.character(feature_str)))
+m2_l <- readRDS("../saves/m2_l.rds")
 
+
+# m3_l <- glmer(characters ~ predicate + (condition * predicate | id) + (1 | data$stimulus_nc), family = binomial, data = data_length,control=glmerControl(optimizer="bobyqa",optCtrl=list(maxfun=2e5)))
+
+m3_l <- brm(words ~ property + (condition * property | id) + (condition | stimulus_nc),
+                    data = data_wordcount, family = skew_normal(),
+          control = list(adapt_delta = 0.99, max_treedepth = 20),
+          sample_prior = F,
+          cores = 4,
+          chains = 4,
+          inits = 0,
+          iter = 5000)%>%
+  add_criterion("waic")%>%
+  saveRDS(.,"../saves/m3_l.rds")
+
+m3_l <- readRDS("../saves/m3_l.rds")
+
+
+# model comparison 
+loo_compare(m1_l, m2_l, m3_l, criterion = "waic")%>%
+  as.data.frame() %>%
+  tibble::rownames_to_column("Predictors")%>%
+  mutate(
+    Predictors = recode(Predictors, 
+                   m1_l = "condition * Condition", 
+                   m2_l = "Age + Condition",
+                   m3_l = "Age"),
+    weight = exp(elpd_waic) / sum(exp(elpd_waic)),
+    weight = round(weight, 2),
+    WAIC = round(waic, 2),
+    SE = round(se_waic,2))%>%
+  select(Predictors, WAIC, SE, weight)
+```
+
+
+3.2. DV 'Object-feature structure' (Done)
+```{r}
 # Bayesian model object-feature structure
+
+## m1_of <- glmer(obj_fea ~ condition * predicate + (condition * predicate | id) + (1 | data$stimulus_nc), family = binomial, data = data_of_structure,control=glmerControl(optimizer="bobyqa",optCtrl=list(maxfun=2e5)))
 
 m1_of <- brm(obj_fea ~ condition * property + (condition * property | id) + (condition | stimulus_nc),
                     data = data_of_structure, family = bernoulli(),
@@ -282,8 +356,38 @@ m1_of <- brm(obj_fea ~ condition * property + (condition * property | id) + (con
   saveRDS(.,"../saves/m1_of.rds")
 
 m1_of <- readRDS("../saves/m1_of.rds")
+## saved
 
-# ... additional models
+## m2_of <- glmer(obj_fea ~ condition + predicate + (condition * predicate | id) + (1 | data$stimulus_nc), family = binomial, data = data_of_structure,control=glmerControl(optimizer="bobyqa",optCtrl=list(maxfun=2e5)))
+
+m2_of <- brm(obj_fea ~ condition + property + (condition * property | id) + (condition | stimulus_nc),
+                    data = data_of_structure, family = bernoulli(),
+          control = list(adapt_delta = 0.99, max_treedepth = 20),
+          sample_prior = F,
+          cores = 4,
+          chains = 4,
+          inits = 0,
+          iter = 5000)%>%
+  add_criterion("waic")%>%
+  saveRDS(.,"../saves/m2_of.rds")
+
+m2_of <- readRDS("../saves/m2_of.rds")
+
+
+# m3_of <- glmer(obj_fea ~ predicate + (condition * predicate | id) + (1 | data$stimulus_nc), family = binomial, data = data_of_structure,control=glmerControl(optimizer="bobyqa",optCtrl=list(maxfun=2e5)))
+
+m3_of <- brm(obj_fea ~ property + (condition * property | id) + (condition | stimulus_nc),
+                    data = data_of_structure, family = bernoulli(),
+          control = list(adapt_delta = 0.99, max_treedepth = 20),
+          sample_prior = F,
+          cores = 4,
+          chains = 4,
+          inits = 0,
+          iter = 5000)%>%
+  add_criterion("waic")%>%
+  saveRDS(.,"../saves/m3_of.rds")
+
+m3_of <- readRDS("../saves/m3_of.rds")
 
 # model comparison 
 loo_compare(m1_of, m2_of, m3_of, criterion = "waic")%>%
@@ -300,41 +404,80 @@ loo_compare(m1_of, m2_of, m3_of, criterion = "waic")%>%
     SE = round(se_waic,2))%>%
   select(Predictors, WAIC, SE, weight)
 
-
-
-### length  ## hier keine binäre Codierung, Modell funktioniert nicht
-m1_l <- glmer(characters ~ condition + (condition * predicate | id) + (1 | stimulus_nc), family = binomial, data = data_length,control=glmerControl(optimizer="bobyqa",optCtrl=list(maxfun=2e5)))
-
-m2_l <- glmer(characters ~ condition + predicate + (condition * predicate | id) + (1 | data$stimulus_nc), family = binomial, data = data_length,control=glmerControl(optimizer="bobyqa",optCtrl=list(maxfun=2e5)))
-
-m3_l <- glmer(characters ~ predicate + (condition * predicate | id) + (1 | data$stimulus_nc), family = binomial, data = data_length,control=glmerControl(optimizer="bobyqa",optCtrl=list(maxfun=2e5)))
-
-
-### object-feature structure
-m1_of <- glmer(obj_fea ~ condition * predicate + (condition * predicate | id) + (1 | data$stimulus_nc), family = binomial, data = data_of_structure,control=glmerControl(optimizer="bobyqa",optCtrl=list(maxfun=2e5)))
-
-m2_of <- glmer(obj_fea ~ condition + predicate + (condition * predicate | id) + (1 | data$stimulus_nc), family = binomial, data = data_of_structure,control=glmerControl(optimizer="bobyqa",optCtrl=list(maxfun=2e5)))
-
-m3_of <- glmer(obj_fea ~ predicate + (condition * predicate | id) + (1 | data$stimulus_nc), family = binomial, data = data_of_structure,control=glmerControl(optimizer="bobyqa",optCtrl=list(maxfun=2e5)))
-
-
-### feature content
-m1_fc <- glmer(feature_str ~ condition * predicate + (condition * predicate | id) + (1 | data$stimulus_nc), family = binomial, data = data_fea_content,control=glmerControl(optimizer="bobyqa",optCtrl=list(maxfun=2e5)))
-
-p_m1_fc <- drop1(m1_fc, test = "Chisq")
-
-m2_fc <- glmer(feature_str ~ condition + predicate + (condition * predicate | id) + (1 | data$stimulus_nc), family = binomial, data = data_fea_content,control=glmerControl(optimizer="bobyqa",optCtrl=list(maxfun=2e5)))
-
-m3_fc <- glmer(feature_str ~ predicate + (condition * predicate | id) + (1 | data$stimulus_nc), family = binomial, data = data_fea_content,control=glmerControl(optimizer="bobyqa",optCtrl=list(maxfun=2e5)))
-
 ```
 
 
-5. Word Clouds -  seperate word cloud for each object and predicate
-
+3.3. DV 'Feature content' (TO DO Baysian Models correct)
 ```{r}
-## create data file for wordclouds
+# m1_fc <- glmer(feature_str ~ condition * predicate + (condition * predicate | id) + (1 | data$stimulus_nc), family = binomial, data = data_fea_content,control=glmerControl(optimizer="bobyqa",optCtrl=list(maxfun=2e5)))
 
+m1_fc <- brm(feature_str ~ condition * property + (condition * property | id) + (condition | stimulus_nc),
+                    data = data_fea_content, family = bernoulli(),
+          control = list(adapt_delta = 0.99, max_treedepth = 20),
+          sample_prior = F,
+          cores = 4,
+          chains = 4,
+          inits = 0,
+          iter = 5000)%>%
+  add_criterion("waic")%>%
+  saveRDS(.,"../saves/m1_fc.rds")
+
+m1_fc <- readRDS("../saves/m1_fc.rds")
+
+
+# m2_fc <- glmer(feature_str ~ condition + predicate + (condition * predicate | id) + (1 | data$stimulus_nc), family = binomial, data = data_fea_content,control=glmerControl(optimizer="bobyqa",optCtrl=list(maxfun=2e5)))
+
+m2_fc <- brm(feature_str ~ condition + property + (condition * property | id) + (condition | stimulus_nc),
+                    data = data_fea_content, family = bernoulli(),
+          control = list(adapt_delta = 0.99, max_treedepth = 20),
+          sample_prior = F,
+          cores = 4,
+          chains = 4,
+          inits = 0,
+          iter = 5000)%>%
+  add_criterion("waic")%>%
+  saveRDS(.,"../saves/m2_fc.rds")
+
+m2_fc <- readRDS("../saves/m2_fc.rds")
+
+
+# m3_fc <- glmer(feature_str ~ predicate + (condition * predicate | id) + (1 | data$stimulus_nc), family = binomial, data = data_fea_content,control=glmerControl(optimizer="bobyqa",optCtrl=list(maxfun=2e5)))
+
+m3_fc <- brm(feature_str ~ property + (condition * property | id) + (condition | stimulus_nc),
+                    data = data_fea_content, family = bernoulli(),
+          control = list(adapt_delta = 0.99, max_treedepth = 20),
+          sample_prior = F,
+          cores = 4,
+          chains = 4,
+          inits = 0,
+          iter = 5000)%>%
+  add_criterion("waic")%>%
+  saveRDS(.,"../saves/m3_fc.rds")
+
+m3_fc <- readRDS("../saves/m3_fc.rds")
+
+
+# model comparison 
+loo_compare(m1_fc, m2_fc, m3_fc, criterion = "waic")%>%
+  as.data.frame() %>%
+  tibble::rownames_to_column("Predictors")%>%
+  mutate(
+    Predictors = recode(Predictors, 
+                   m1_fc = "condition * Condition", 
+                   m2_fc = "Age + Condition",
+                   m3_fc = "Age"),
+    weight = exp(elpd_waic) / sum(exp(elpd_waic)),
+    weight = round(weight, 2),
+    WAIC = round(waic, 2),
+    SE = round(se_waic,2))%>%
+  select(Predictors, WAIC, SE, weight)
+```
+
+
+
+4. Word Clouds
+4.1. Create data file for word clouds
+```{r}
 data_file <- read.csv2("data_file.csv")%>%
   select(-X)
 
@@ -343,73 +486,157 @@ data_words <- read.csv2("Words_data_codiert.csv")%>%
 
 data_wordcloud <- data_file %>%
   left_join(data_words)
-
-############
-data_wordcloud <- data_file %>%
-  mutate(pmatch(value, object, nomatch = NA_integer_, duplicates.ok = FALSE))
-
-data_wordcloud <- data_file %>%
-  mutate(type = ifelse(is.element(value, object) == TRUE, "object"))
-
-data_wordcloud <- data_file %>%
-  mutate(type = ifelse(value %in% "object", "object"))
-
-data_wordcloud <- data_file %>%
-  mutate_each(type = ifelse(value %in% "object", "object"))
-
-data_wordcloud <- data_file %>%
-  mutate(type = ifelse("value" %in% object, "object"))
-
-is.element(x, y)
+```
 
 
+4.2. Wordclouds for objects (objects/animals) (sepearate for hol versus seq)
+```{r}
+# par(mfrow=c(2,2))
 
-data_wordcloud <- data_file %>%
-  mutate(pmatch(value, object, nomatch = NA_integer_, duplicates.ok = FALSE))
+## object (hol vs seq)
+object_hol <- data_wordcloud %>%
+  filter(type == "object", class == "object", condition == "hol") %>%
+  select(value, freq) %>%
+  distinct()
 
-
-pmatch(x, table, nomatch = NA_integer_, duplicates.ok = FALSE)
-
-
-if (x < 5) 1 else 2
-
-
-
-##########
-######  a <- match(data_file$type, object, nomatch = NA_integer_, incomparables = NULL)
-
-
-jump <- data_file %>%
-  filter(predicate == "jump") %>%
-  group_by(value) %>%
-  summarise(freq = n()) %>%
-  arrange(-freq)
-
-jump
-
-jump <- data_file_pretest %>%
-  filter(predicate == "jump") %>%
-  pull(value) %>%
-  unique()
-
-jump
-
-
-oap <- c("ball", "bike", "cat", "comb", "duck", "elephant", "fork", "hammer", "monkey", "many", "one", "small", "big", "jump", "run")
-
-docs <- c("Hund", "Katze", "Maus", "Hund", "Hase", "Kind", "Hase", "Hase", "Hase", "Hase", "Hase")
-
-
-## generate wordclouds
-wordcloud(c(docs), seq(1, 1000, len = 62),
+wordcloud(words = object_hol$value, freq = object_hol$freq, min.freq = 1,
+          max.words=200, random.order=FALSE, rot.per=0.35, 
           colors=brewer.pal(8, "Dark2"))
 
-wordcloud(c(docs), seq(1, 1000, len = 62),
+object_seq <- data_wordcloud %>%
+  filter(type == "object", class == "object", condition == "seq") %>%
+  select(value, freq) %>%
+  distinct()
+
+wordcloud(words = object_seq$value, freq = object_seq$freq, min.freq = 1,
+          max.words=200, random.order=FALSE, rot.per=0.35, 
+          colors=brewer.pal(8, "Dark2"))
+
+
+## animal (hol vs seq)
+animal_hol <- data_wordcloud %>%
+  filter(type == "object", class == "animal", condition == "hol") %>%
+  select(value, freq) %>%
+  distinct()
+
+wordcloud(words = animal_hol$value, freq = animal_hol$freq, min.freq = 1,
+          max.words=200, random.order=FALSE, rot.per=0.35, 
+          colors=brewer.pal(8, "Dark2"))
+
+animal_seq <- data_wordcloud %>%
+  filter(type == "object", class == "animal", condition == "seq") %>%
+  select(value, freq) %>%
+  distinct()
+
+wordcloud(words = animal_seq$value, freq = animal_seq$freq, min.freq = 1,
+          max.words=200, random.order=FALSE, rot.per=0.35, 
+          colors=brewer.pal(8, "Dark2"))
+
+```
+
+
+4.3. wordclouds for features (movement/number/size) (sepearate for hol versus seq)
+```{r}
+## movement (hol vs seq)
+movement_hol <- data_wordcloud %>%
+  filter(type == "feature", property == "movement", condition == "hol") %>%
+  select(value, freq) %>%
+  distinct()
+
+wordcloud(words = movement_hol$value, freq = movement_hol$freq, min.freq = 1,
+          random.order=FALSE, rot.per=0.35, 
+          colors=brewer.pal(8, "Dark2"))
+
+movement_seq <- data_wordcloud %>%
+  filter(type == "feature", property == "movement", condition == "seq") %>%
+  select(value, freq) %>%
+  distinct()
+
+wordcloud(words = movement_seq$value, freq = movement_seq$freq, min.freq = 1,
+          random.order=FALSE, rot.per=0.35, 
+          colors=brewer.pal(8, "Dark2"))
+
+
+## number (hol vs seq)
+number_hol <- data_wordcloud %>%
+  filter(type == "feature", property == "number", condition == "hol") %>%
+  select(value, freq) %>%
+  distinct()
+
+wordcloud(words = number_hol$value, freq = number_hol$freq, min.freq = 1,
+          random.order=FALSE, rot.per=0.35, 
+          colors=brewer.pal(8, "Dark2"))
+
+number_seq <- data_wordcloud %>%
+  filter(type == "feature", property == "number", condition == "seq") %>%
+  select(value, freq) %>%
+  distinct()
+
+wordcloud(words = number_seq$value, freq = number_seq$freq, min.freq = 1,
+          random.order=FALSE, rot.per=0.35, 
+          colors=brewer.pal(8, "Dark2"))
+
+
+## size (hol vs seq)
+size_hol <- data_wordcloud %>%
+  filter(type == "feature", property == "size", condition == "hol") %>%
+  select(value, freq) %>%
+  distinct()
+
+wordcloud(words = size_hol$value, freq = size_hol$freq, min.freq = 1,
+          random.order=FALSE, rot.per=0.35, 
+          colors=brewer.pal(8, "Dark2"))
+
+size_seq <- data_wordcloud %>%
+  filter(type == "feature", property == "size", condition == "seq") %>%
+  select(value, freq) %>%
+  distinct()
+
+wordcloud(words = size_seq$value, freq = size_seq$freq, min.freq = 1,
+          random.order=FALSE, rot.per=0.35, 
           colors=brewer.pal(8, "Dark2"))
 
 ```
 
 
 
+
+
+
+
+(5. t-test + ANOVA) 
+
+two.sided t.test (rel versus not) 
+
+```{r}
+## feature_str
+t.test(feature_str ~ condition,
+       alternative = c("two.sided"), data_rel_not)
+
+## object_str
+t.test(object_str ~ condition,
+       alternative = c("two.sided"), data_rel_not)
+```
+
+```{r}
+library("ez")
+
+data_fea_contentANOVA <- data_fea_content %>%
+  mutate(as.factor(predicate),
+         as.factor(object),
+         as.factor(condition)) %>%
+  mutate(feature_str = ifelse(object_str == "rel", "2", "1"),
+         as.numeric(feature_str)) %>%
+  mutate(as.numeric(id))
+
+
+ezANOVA_fea_content <- ezANOVA(data_fea_contentANOVA, dv=(feature_str), wid =(id),
+                                   within =(condition), detailed = T,
+                                   type=3)
+
+ezAnova_PercCor <- ezANOVA(data_longPercCor, dv=.(Percent_Correct), wid=.(VPCode), 
+                           between=.(Gruppe), within=.(Similarity, TestLanguage2), detailed = T, type=3)
+
+```
 
 
