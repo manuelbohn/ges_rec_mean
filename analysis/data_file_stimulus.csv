@@ -2,9 +2,9 @@
 1;hol;VP01;ball_jump;"Springeder Hase""}";2;irrel;rel;;irrel;rel
 2;seq;VP02;ball_jump;"aufgehende Sonne""}";2;irrel;irrel;;irrel;irrel
 3;hol;VP03;ball_jump;"Kaninchen""}";3;irrel;ne;;irrel;ne
-4;seq;VP04;ball_jump;"Trampolin""}";7;irrel;ne;;irrel;ne
+4;seq;VP04;ball_jump;"Trampolin""}";7;irrel;ne;;irrel;rel
 5;hol;VP05;ball_jump;"Grashüpfer ""}";1;irrel;ne;;irrel;rel
-6;seq;VP06;ball_jump;"Springreifen""}";1;irrel;ne;;irrel;rel
+6;seq;VP06;ball_jump;"Springreifen""}";1;rel;ne;;rel;rel
 7;hol;VP07;ball_jump;"hüpfender Ball""}";1;rel;rel;;rel;rel
 8;seq;VP08;ball_jump;"großes herz""}";3;irrel;irrel;;irrel;irrel
 9;hol;VP09;ball_jump;"Gradhüpfer""}";3;irrel;ne;;irrel;rel
@@ -24,9 +24,9 @@
 23;seq;VP03;bike_big;"Airbag""}";8;irrel;ne;;irrel;ne
 24;hol;VP04;bike_big;"Radfahrer""}";1;rel;ne;;rel;ne
 25;seq;VP05;bike_big;"fahrendes Auto""}";3;irrel;irrel;;irrel;irrel
-26;hol;VP06;bike_big;"Fahrradfahren""}";1;rel;irrel;;rel;irrel
+26;hol;VP06;bike_big;"Fahrradfahren""}";1;rel;ne;;rel;irrel
 27;seq;VP07;bike_big;"großes Auto""}";1;irrel;rel;;irrel;rel
-28;hol;VP08;bike_big;"Fahrradfahrer""}";2;rel;irrel;;rel;irrel
+28;hol;VP08;bike_big;"Fahrradfahrer""}";2;rel;ne;;rel;ne
 29;seq;VP09;bike_big;"großer Storch""}";2;irrel;rel;;irrel;rel
 30;hol;VP10;bike_big;"Fahrrad""}";1;rel;ne;;rel;ne
 31;seq;VP11;bike_big;"bär, Huhn ""}";3;irrel;ne;;irrel;ne
@@ -46,7 +46,7 @@
 45;hol;VP05;bike_many;"schnaubendes Pferd ""}";4;irrel;irrel;;irrel;irrel
 46;seq;VP06;bike_many;"Vogelstrauß""}";3;irrel;ne;;irrel;ne
 47;hol;VP07;bike_many;"schleckendes Känguru""}";1;irrel;irrel;;irrel;irrel
-48;seq;VP08;bike_many;"ein Riese""}";5;irrel;ne;;irrel;ne
+48;seq;VP08;bike_many;"ein Riese""}";5;irrel;irrel;;irrel;irrel
 49;hol;VP09;bike_many;"Fahrrad""}";3;rel;ne;;rel;ne
 50;seq;VP10;bike_many;"Torbogen""}";7;irrel;ne;;irrel;ne
 51;hol;VP11;bike_many;"Fahrrad fahren""}";5;rel;irrel;;rel;irrel
@@ -56,7 +56,7 @@
 55;hol;VP15;bike_many;"Radfahrer""}";2;rel;ne;;rel;ne
 56;seq;VP16;bike_many;"Elegante Tänzerin""}";2;irrel;irrel;;irrel;irrel
 57;hol;VP17;bike_many;"schleckendes Känguru""}";1;irrel;irrel;;irrel;irrel
-58;seq;VP18;bike_many;"ein Apfel""}";2;irrel;ne;;irrel;ne
+58;seq;VP18;bike_many;"ein Apfel""}";2;irrel;irrel;;irrel;irrel
 59;hol;VP19;bike_many;"ausweichender Läufer""}";6;irrel;irrel;;irrel;irrel
 60;seq;VP20;bike_many;"stolzer Pfau""}";5;irrel;irrel;;irrel;irrel
 61;seq;VP01;bike_one;"Gutes Fahrrad""}";3;rel;irrel;;rel;irrel
@@ -91,7 +91,7 @@
 90;seq;VP10;bike_small;"Dinosaurier""}";1;irrel;ne;;irrel;ne
 91;hol;VP11;bike_small;"Beinübung ""}";3;irrel;ne;;irrel;ne
 92;seq;VP12;bike_small;"laufender Mensch""}";2;irrel;irrel;;irrel;irrel
-93;hol;VP13;bike_small;"Treten""}";2;irrel;ne;;rel;ne
+93;hol;VP13;bike_small;"Treten""}";2;ne;irrel;;ne;irrel
 94;seq;VP14;bike_small;"laufender Hund ""}";3;irrel;irrel;;irrel;irrel
 95;hol;VP15;bike_small;"strampelndes Löwenbaby""}";3;irrel;irrel;;irrel;irrel
 96;seq;VP16;bike_small;"laufender Mönch ""}";2;irrel;irrel;;irrel;irrel
@@ -133,11 +133,11 @@
 132;seq;VP12;cat_run;"Pferd""}";2;irrel;ne;;irrel;ne
 133;hol;VP13;cat_run;"Frosch""}";2;irrel;ne;;irrel;ne
 134;seq;VP14;cat_run;"böser Frosch""}";2;irrel;irrel;;irrel;irrel
-135;hol;VP15;cat_run;"Wildkatze""}";1;irrel;ne;;rel;irrel
+135;hol;VP15;cat_run;"Wildkatze""}";1;rel;ne;;rel;irrel
 136;seq;VP16;cat_run;"junger Affe""}";1;irrel;irrel;;irrel;irrel
 137;hol;VP17;cat_run;"schnelle Maus""}";4;rel;rel;;rel;rel
 138;seq;VP18;cat_run;"eine Katze""}";2;rel;ne;;rel;ne
-139;hol;VP19;cat_run;"Hund""}";3;irrel;ne;;irrel;ne
+139;hol;VP19;cat_run;"Hund""}";3;rel;ne;;rel;ne
 140;seq;VP20;cat_run;"trauriges Pferd""}";4;irrel;irrel;;irrel;irrel
 141;seq;VP01;comb_big;"Großes Kommen ""}";1;rel;rel;;rel;rel
 142;hol;VP02;comb_big;"glatte Haare""}";1;irrel;irrel;;irrel;irrel
@@ -209,7 +209,7 @@
 208;seq;VP08;comb_small;"streicheln""}";3;ne;irrel;;ne;irrel
 209;hol;VP09;comb_small;"Haarbürste""}";1;rel;ne;;rel;ne
 210;seq;VP10;comb_small;"Haargel""}";6;irrel;ne;;irrel;ne
-211;hol;VP11;comb_small;"haare frisieren ""}";1;irrel;irrel;;irrel;irrel
+211;hol;VP11;comb_small;"haare frisieren ""}";1;irrel;irrel;;rel;irrel
 212;seq;VP12;comb_small;"Haarbürste""}";3;rel;ne;;rel;ne
 213;hol;VP13;comb_small;"Haarbürste""}";1;rel;ne;;rel;ne
 214;seq;VP14;comb_small;"rundes Haargel""}";1;irrel;irrel;;irrel;irrel
@@ -227,13 +227,13 @@
 226;hol;VP06;duck_big;"Ente""}";1;rel;ne;;rel;ne
 227;seq;VP07;duck_big;"dicker Bär""}";1;irrel;rel;;irrel;rel
 228;hol;VP08;duck_big;"eine Ente ""}";1;rel;ne;;rel;ne
-229;seq;VP09;duck_big;"lange Beine""}";8;irrel;rel;;irrel;rel
+229;seq;VP09;duck_big;"lange Beine""}";8;irrel;irrel;;irrel;irrel
 230;hol;VP10;duck_big;"Vogel""}";2;rel;ne;;rel;ne
 231;seq;VP11;duck_big;"gehen, wandern""}";1;ne;irrel;;ne;irrel
 232;hol;VP12;duck_big;"Huhn""}";1;rel;ne;;rel;ne
 233;seq;VP13;duck_big;"Matrose""}";3;irrel;ne;;irrel;ne
 234;hol;VP14;duck_big;"Huhn""}";2;rel;ne;;rel;ne
-235;seq;VP15;duck_big;"sich beeilen ""}";1;irrel;irrel;;irrel;irrel
+235;seq;VP15;duck_big;"sich beeilen ""}";1;ne;irrel;;ne;irrel
 236;hol;VP16;duck_big;"Erschöpfte Brieftaube""}";2;rel;irrel;;rel;irrel
 237;seq;VP17;duck_big;"dicker Bär""}";1;irrel;rel;;irrel;rel
 238;hol;VP18;duck_big;"ein Vogel""}";1;rel;ne;;rel;ne
@@ -276,7 +276,7 @@
 275;seq;VP15;duck_many;"Taucher, Schwimmer""}";2;irrel;ne;;irrel;ne
 276;hol;VP16;duck_many;"Verspielter Affe""}";1;irrel;irrel;;irrel;irrel
 277;seq;VP17;duck_many;"springender Kreis""}";2;irrel;irrel;;irrel;irrel
-278;hol;VP18;duck_many;"ein Huhn""}";2;rel;ne;;rel;ne
+278;hol;VP18;duck_many;"ein Huhn""}";2;rel;irrel;;rel;irrel
 279;seq;VP19;duck_many;"ertrinkende Person""}";4;irrel;irrel;;irrel;irrel
 280;hol;VP20;duck_many;"schlechtgelaunter Affe""}";1;irrel;irrel;;irrel;irrel
 281;hol;VP01;duck_one;"Katze""}";2;irrel;ne;;irrel;ne
@@ -311,7 +311,7 @@
 310;hol;VP10;duck_run;"rennender Vogel""}";5;rel;rel;;rel;rel
 311;seq;VP11;duck_run;"Vogel art, Papagei ""}";2;rel;ne;;rel;ne
 312;hol;VP12;duck_run;"laufende Ente""}";4;rel;rel;;rel;rel
-313;seq;VP13;duck_run;"watschelnde Ente""}";1;rel;rel;;rel;rel
+313;seq;VP13;duck_run;"watschelnde Ente""}";1;rel;irrel;;rel;irrel
 314;hol;VP14;duck_run;"fliegender Vogel""}";2;rel;irrel;;rel;irrel
 315;seq;VP15;duck_run;"neugieriger Vogel""}";1;rel;irrel;;rel;irrel
 316;hol;VP16;duck_run;"Junger Elefant""}";3;irrel;irrel;;irrel;irrel
@@ -379,7 +379,7 @@
 378;seq;VP18;elephant_run;"Elefant""}";2;rel;ne;;rel;ne
 379;hol;VP19;elephant_run;"laufender Elefant ""}";1;rel;rel;;rel;rel
 380;seq;VP20;elephant_run;"rennender Elefant""}";1;rel;rel;;rel;rel
-381;seq;VP01;fork_big;"Langes Essen""}";3;rel;rel;;rel;rel
+381;seq;VP01;fork_big;"Langes Essen""}";3;rel;irrel;;rel;irrel
 382;hol;VP02;fork_big;"gegessene Karotte""}";3;irrel;irrel;;rel;irrel
 383;seq;VP03;fork_big;"Futtertrog""}";1;irrel;ne;;rel;ne
 384;hol;VP04;fork_big;"Essenstopf""}";2;irrel;ne;;rel;ne
@@ -393,7 +393,7 @@
 392;hol;VP12;fork_big;"Essen""}";3;rel;ne;;rel;ne
 393;seq;VP13;fork_big;"große Gabel""}";2;rel;rel;;rel;rel
 394;hol;VP14;fork_big;"große Gabel""}";1;rel;rel;;rel;rel
-395;seq;VP15;fork_big;"große Pizza essen""}";2;irrel;rel;;rel;rel
+395;seq;VP15;fork_big;"große Pizza essen""}";2;irrel;rel;;irrel;rel
 396;hol;VP16;fork_big;"Hungriger Affe""}";2;irrel;irrel;;irrel;irrel
 397;seq;VP17;fork_big;"essender Bär""}";1;irrel;irrel;;rel;irrel
 398;hol;VP18;fork_big;"das Wasser""}";2;irrel;ne;;irrel;ne
@@ -405,7 +405,7 @@
 404;seq;VP04;fork_many;"Fastfood""}";5;rel;ne;;rel;ne
 405;hol;VP05;fork_many;"Obst pflücken, essen""}";4;irrel;irrel;;rel;irrel
 406;seq;VP06;fork_many;"Brei essen""}";3;irrel;irrel;;rel;irrel
-407;hol;VP07;fork_many;"langes Buffet""}";1;irrel;rel;;irrel;rel
+407;hol;VP07;fork_many;"langes Buffet""}";1;irrel;irrel;;irrel;rel
 408;seq;VP08;fork_many;"essen""}";3;ne;irrel;;rel;irrel
 409;hol;VP09;fork_many;"unterschiedliches Essen probieren""}";4;rel;rel;;rel;rel
 410;seq;VP10;fork_many;"schneller Esser""}";8;rel;irrel;;rel;irrel
@@ -415,7 +415,7 @@
 414;seq;VP14;fork_many;"Essen""}";1;rel;ne;;rel;ne
 415;hol;VP15;fork_many;"jemand isst von einem Buffet""}";2;irrel;irrel;;rel;irrel
 416;seq;VP16;fork_many;"""}";8;ne;ne;;ne;ne
-417;hol;VP17;fork_many;"langes Buffet""}";1;irrel;rel;;irrel;rel
+417;hol;VP17;fork_many;"langes Buffet""}";1;irrel;irrel;;irrel;irrel
 418;seq;VP18;fork_many;"Essen""}";1;rel;ne;;rel;ne
 419;hol;VP19;fork_many;"""}";5;ne;ne;;ne;ne
 420;seq;VP20;fork_many;"fast food""}";5;rel;ne;;rel;ne
@@ -464,7 +464,7 @@
 463;seq;VP03;hammer_big;"Sprudelwasser""}";7;irrel;ne;;irrel;ne
 464;hol;VP04;hammer_big;"Schellen""}";2;irrel;ne;;irrel;ne
 465;seq;VP05;hammer_big;"ärgerndes Kind ""}";8;irrel;ne;;irrel;ne
-466;hol;VP06;hammer_big;"Ziehharmonika""}";1;rel;ne;;rel;ne
+466;hol;VP06;hammer_big;"Ziehharmonika""}";1;irrel;ne;;irrel;ne
 467;seq;VP07;hammer_big;"geschlossener Würfel""}";2;irrel;irrel;;irrel;irrel
 468;hol;VP08;hammer_big;"krokodil""}";4;irrel;ne;;irrel;ne
 469;seq;VP09;hammer_big;"Hammer""}";3;rel;ne;;rel;ne
@@ -496,7 +496,7 @@
 495;hol;VP15;hammer_many;"trommeln""}";2;ne;irrel;;rel;ne
 496;seq;VP16;hammer_many;"Zehn Finger""}";1;irrel;rel;;irrel;rel
 497;hol;VP17;hammer_many;"laute Trommel""}";2;rel;irrel;;rel;irrel
-498;seq;VP18;hammer_many;"eine Glocke""}";3;irrel;ne;;irrel;ne
+498;seq;VP18;hammer_many;"eine Glocke""}";3;irrel;irrel;;irrel;irrel
 499;hol;VP19;hammer_many;"Trommel""}";4;rel;ne;;rel;ne
 500;seq;VP20;hammer_many;"Gruppe mit 10 Personen""}";35;irrel;rel;;irrel;rel
 501;seq;VP01;hammer_one;"Schnick Schnack Schnur gewinnen""}";3;irrel;irrel;;irrel;irrel

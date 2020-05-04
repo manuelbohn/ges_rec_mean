@@ -275,6 +275,8 @@ data_fea_content <- data %>%
 
 # m1_l <- glmer(characters ~ condition + (condition * predicate | id) + (1 | stimulus_nc), family = binomial, data = data_length,control=glmerControl(optimizer="bobyqa",optCtrl=list(maxfun=2e5)))
 
+## ? in Präregistirierung ( 1 | stimulus), letztes Mal besprochen (condition | stimulus)
+
 m1_l <- brm(words ~ condition * property + (condition * property | id) + (condition | stimulus_nc),
                     data = data_wordcount, family = skew_normal(),
           control = list(adapt_delta = 0.99, max_treedepth = 20),
@@ -284,7 +286,7 @@ m1_l <- brm(words ~ condition * property + (condition * property | id) + (condit
           inits = 0,
           iter = 5000)%>%
   add_criterion("waic")%>%
-  saveRDS(.,"../saves/m1_of.rds")
+  saveRDS(.,"../saves/m1_l.rds")
 
 m1_l <- readRDS("../saves/m1_l.rds")
 
