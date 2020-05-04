@@ -358,7 +358,6 @@ m1_of <- brm(obj_fea ~ condition * property + (condition * property | id) + (con
   saveRDS(.,"../saves/m1_of.rds")
 
 m1_of <- readRDS("../saves/m1_of.rds")
-## saved
 
 ## m2_of <- glmer(obj_fea ~ condition + predicate + (condition * predicate | id) + (1 | data$stimulus_nc), family = binomial, data = data_of_structure,control=glmerControl(optimizer="bobyqa",optCtrl=list(maxfun=2e5)))
 
