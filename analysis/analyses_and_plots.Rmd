@@ -18,6 +18,16 @@ library(RColorBrewer)
 library(patchwork)
 library(ngram)
 
+# install.packages("bayesplot")
+# if (!require("devtools")) {
+#   install.packages("devtools")
+# }
+# devtools::install_github("stan-dev/bayesplot")
+
+library("bayesplot")
+library("rstanarm")
+library("ggplot2")
+
 ##library(psychometric)
 ##library(multilevel)
 ##library(nlme)
@@ -31,6 +41,8 @@ library(ngram)
 
 data <- read.csv2("data_file_stimulus.csv")
 data
+
+## To Do Anführung Klammer
 ```
 
 
@@ -253,6 +265,10 @@ data_of_structure <- data %>%
                            ifelse(predicate == "big" | predicate == "small", "size","number")),
          class = ifelse(object == "ball" | object == "bike" | object == "comb" | object == "bike" | object == "fork" | object == "hammer", "object","animal"),
          obj_fea = as.numeric(as.character(obj_fea)))
+
+## inhaltlich relevant (erst überprüfen wie viele Fälle) 
+hist(data_of_structure$obj_fea)
+## --> genügend
   
 ## Feature in response is relevant
 data_fea_content <- data %>%
@@ -268,17 +284,18 @@ data_fea_content <- data %>%
 
 
 
-3.2. dependent variable 'length' (hier keine binäre Codierung)
+3.2. dependent variable 'length' (hier keine binäre Codierung) -> Poisson Verteilung
 ```{r}
 ## https://www.rdocumentation.org/packages/brms/versions/2.12.0/topics/brmsfamily
-## wsh skew_normal wegen schiefer Verteilung
+## Daten Plotten als Histogramm, dann:
+hist(data_wordcount$words)
+## --> Poisson Verteilung und negative binomial (nur condition model)
 
-# m1_l <- glmer(characters ~ condition + (condition * predicate | id) + (1 | stimulus_nc), family = binomial, data = data_length,control=glmerControl(optimizer="bobyqa",optCtrl=list(maxfun=2e5)))
 
-## ? in Präregistirierung ( 1 | stimulus), letztes Mal besprochen (condition | stimulus)
+# m1_l_p
 
-m1_l <- brm(words ~ condition * property + (condition * property | id) + (condition | stimulus_nc),
-                    data = data_wordcount, family = skew_normal(),
+m1_l_p <- brm(words ~ condition * property + (condition * property | id) + (condition | stimulus_nc),
+                    data = data_wordcount, family = poisson(),
           control = list(adapt_delta = 0.99, max_treedepth = 20),
           sample_prior = F,
           cores = 4,
@@ -286,15 +303,15 @@ m1_l <- brm(words ~ condition * property + (condition * property | id) + (condit
           inits = 0,
           iter = 5000)%>%
   add_criterion("waic")%>%
-  saveRDS(.,"../saves/m1_l.rds")
+  saveRDS(.,"../saves/m1_l_p.rds")
 
-m1_l <- readRDS("../saves/m1_l.rds")
+m1_l_p <- readRDS("../saves/m1_l_p.rds")
 
 
-# m2_l <- glmer(characters ~ condition + predicate + (condition * predicate | id) + (1 | data$stimulus_nc), family = binomial, data = data_length,control=glmerControl(optimizer="bobyqa",optCtrl=list(maxfun=2e5)))
+# m2_l_p
 
-m2_l <- brm(words ~ condition + property + (condition * property | id) + (condition | stimulus_nc),
-                    data = data_wordcount, family = skew_normal(),
+m2_l_p <- brm(words ~ condition + property + (condition * property | id) + (condition | stimulus_nc),
+                    data = data_wordcount, family = poisson(),
           control = list(adapt_delta = 0.99, max_treedepth = 20),
           sample_prior = F,
           cores = 4,
@@ -302,15 +319,15 @@ m2_l <- brm(words ~ condition + property + (condition * property | id) + (condit
           inits = 0,
           iter = 5000)%>%
   add_criterion("waic")%>%
-  saveRDS(.,"../saves/m2_l.rds")
+  saveRDS(.,"../saves/m2_l_p.rds")
 
-m2_l <- readRDS("../saves/m2_l.rds")
+m2_l_p <- readRDS("../saves/m2_l_p.rds")
 
 
-# m3_l <- glmer(characters ~ predicate + (condition * predicate | id) + (1 | data$stimulus_nc), family = binomial, data = data_length,control=glmerControl(optimizer="bobyqa",optCtrl=list(maxfun=2e5)))
+# m3_l_p
 
-m3_l <- brm(words ~ property + (condition * property | id) + (condition | stimulus_nc),
-                    data = data_wordcount, family = skew_normal(),
+m3_l_p <- brm(words ~ property + (condition * property | id) + (condition | stimulus_nc),
+                    data = data_wordcount, family = poisson(),
           control = list(adapt_delta = 0.99, max_treedepth = 20),
           sample_prior = F,
           cores = 4,
@@ -318,33 +335,174 @@ m3_l <- brm(words ~ property + (condition * property | id) + (condition | stimul
           inits = 0,
           iter = 5000)%>%
   add_criterion("waic")%>%
-  saveRDS(.,"../saves/m3_l.rds")
+  saveRDS(.,"../saves/m3_l_p.rds")
 
-m3_l <- readRDS("../saves/m3_l.rds")
+m3_l_p <- readRDS("../saves/m3_l_p.rds")
+
+
+# m4_l_p (condition als einziger Prädikter, Rest random effects) 
+m4_l_p <- brm(words ~ condition + (condition * property | id) + (condition | stimulus_nc),
+                    data = data_wordcount, family = poisson(),
+          control = list(adapt_delta = 0.99, max_treedepth = 20),
+          sample_prior = F,
+          cores = 4,
+          chains = 4,
+          inits = 0,
+          iter = 5000)%>%
+  add_criterion("waic")%>%
+  saveRDS(.,"../saves/m4_l_p.rds")
+
+m4_l_p <- readRDS("../saves/m4_l_p.rds")
+
+
+## m5_l_p (Baseline Modell, auch in Modellvergleich)
+m5_l_p <- brm(words ~ 1 + (condition * property | id) + (condition | stimulus_nc),
+                    data = data_wordcount, family = poisson(),
+          control = list(adapt_delta = 0.99, max_treedepth = 20),
+          sample_prior = F,
+          cores = 4,
+          chains = 4,
+          inits = 0,
+          iter = 5000)%>%
+  add_criterion("waic")%>%
+  saveRDS(.,"../saves/m5_l_p.rds")
+
+m5_l_p <- readRDS("../saves/m5_l_p.rds")
 
 
 # model comparison 
-loo_compare(m1_l, m2_l, m3_l, criterion = "waic")%>%
+loo_compare(m1_l_p, m2_l_p, m3_l_p, m4_l_p, m5_l_p, criterion = "waic")%>%
   as.data.frame() %>%
   tibble::rownames_to_column("Predictors")%>%
   mutate(
     Predictors = recode(Predictors, 
-                   m1_l = "condition * Condition", 
-                   m2_l = "Age + Condition",
-                   m3_l = "Age"),
+                   m1_l_p = "condition by property", 
+                   m2_l_p = "condition + property",
+                   m3_l_p = "property",
+                   m4_l_p = "condition",
+                   m5_l_p = "baseline"),
     weight = exp(elpd_waic) / sum(exp(elpd_waic)),
     weight = round(weight, 2),
     WAIC = round(waic, 2),
     SE = round(se_waic,2))%>%
   select(Predictors, WAIC, SE, weight)
+
+## data overfitted
+# best model: condition (lowest WAIC score)
 ```
 
 
-3.2. DV 'Object-feature structure' (Done)
+
+
+3.2. dependent variable 'length' --> negative binomial  negbinomial
+```{r}
+# m1_l_nb
+
+m1_l_nb <- brm(words ~ condition * property + (condition * property | id) + (condition | stimulus_nc),
+                    data = data_wordcount, family = negbinomial(),
+          control = list(adapt_delta = 0.99, max_treedepth = 20),
+          sample_prior = F,
+          cores = 4,
+          chains = 4,
+          inits = 0,
+          iter = 5000)%>%
+  add_criterion("waic")%>%
+  saveRDS(.,"../saves/m1_l_nb.rds")
+
+m1_l_nb <- readRDS("../saves/m1_l_nb.rds")
+
+
+# m2_l_nb
+
+m2_l_nb <- brm(words ~ condition + property + (condition * property | id) + (condition | stimulus_nc),
+                    data = data_wordcount, family = negbinomial(),
+          control = list(adapt_delta = 0.99, max_treedepth = 20),
+          sample_prior = F,
+          cores = 4,
+          chains = 4,
+          inits = 0,
+          iter = 5000)%>%
+  add_criterion("waic")%>%
+  saveRDS(.,"../saves/m2_l_nb.rds")
+
+m2_l_nb <- readRDS("../saves/m2_l_nb.rds")
+
+
+# m3_l_nb
+
+m3_l_nb <- brm(words ~ property + (condition * property | id) + (condition | stimulus_nc),
+                    data = data_wordcount, family = negbinomial(),
+          control = list(adapt_delta = 0.99, max_treedepth = 20),
+          sample_prior = F,
+          cores = 4,
+          chains = 4,
+          inits = 0,
+          iter = 5000)%>%
+  add_criterion("waic")%>%
+  saveRDS(.,"../saves/m3_l_nb.rds")
+
+m3_l_nb <- readRDS("../saves/m3_l_nb.rds")
+
+## m4_l_nb
+m4_l_nb <- brm(words ~ condition + (condition * property | id) + (condition | stimulus_nc),
+                    data = data_wordcount, family = negbinomial(),
+          control = list(adapt_delta = 0.99, max_treedepth = 20),
+          sample_prior = F,
+          cores = 4,
+          chains = 4,
+          inits = 0,
+          iter = 5000)%>%
+  add_criterion("waic")%>%
+  saveRDS(.,"../saves/m4_l_nb.rds")
+
+m4_l_nb <- readRDS("../saves/m4_l_nb.rds")
+
+
+## m5_l_nb
+m5_l_nb <- brm(words ~ 1 + (condition * property | id) + (condition | stimulus_nc),
+                    data = data_wordcount, family = negbinomial(),
+          control = list(adapt_delta = 0.99, max_treedepth = 20),
+          sample_prior = F,
+          cores = 4,
+          chains = 4,
+          inits = 0,
+          iter = 5000)%>%
+  add_criterion("waic")%>%
+  saveRDS(.,"../saves/m5_l_nb.rds")
+
+m5_l_nb <- readRDS("../saves/m5_l_nb.rds")
+
+
+# model comparison 
+loo_compare(m1_l_nb, m2_l_nb, m3_l_nb, m4_l_nb, m5_l_nb, criterion = "waic")%>%
+  as.data.frame() %>%
+  tibble::rownames_to_column("Predictors")%>%
+  mutate(
+    Predictors = recode(Predictors, 
+                   m1_l_nb = "condition by property", 
+                   m2_l_nb = "condition + property",
+                   m3_l_nb = "property",
+                   m4_l_nb = "condition",
+                   m5_l_nb = "baseline"),
+    weight = exp(elpd_waic) / sum(exp(elpd_waic)),
+    weight = round(weight, 2),
+    WAIC = round(waic, 2),
+    SE = round(se_waic,2))%>%
+  select(Predictors, WAIC, SE, weight)
+
+## best model: condition only
+
+
+```
+
+
+
+
+3.2. DV 'Object-feature structure'
 ```{r}
 # Bayesian model object-feature structure
 
-## m1_of <- glmer(obj_fea ~ condition * predicate + (condition * predicate | id) + (1 | data$stimulus_nc), family = binomial, data = data_of_structure,control=glmerControl(optimizer="bobyqa",optCtrl=list(maxfun=2e5)))
+# m1_of 
 
 m1_of <- brm(obj_fea ~ condition * property + (condition * property | id) + (condition | stimulus_nc),
                     data = data_of_structure, family = bernoulli(),
@@ -359,7 +517,7 @@ m1_of <- brm(obj_fea ~ condition * property + (condition * property | id) + (con
 
 m1_of <- readRDS("../saves/m1_of.rds")
 
-## m2_of <- glmer(obj_fea ~ condition + predicate + (condition * predicate | id) + (1 | data$stimulus_nc), family = binomial, data = data_of_structure,control=glmerControl(optimizer="bobyqa",optCtrl=list(maxfun=2e5)))
+## m2_of 
 
 m2_of <- brm(obj_fea ~ condition + property + (condition * property | id) + (condition | stimulus_nc),
                     data = data_of_structure, family = bernoulli(),
@@ -375,7 +533,7 @@ m2_of <- brm(obj_fea ~ condition + property + (condition * property | id) + (con
 m2_of <- readRDS("../saves/m2_of.rds")
 
 
-# m3_of <- glmer(obj_fea ~ predicate + (condition * predicate | id) + (1 | data$stimulus_nc), family = binomial, data = data_of_structure,control=glmerControl(optimizer="bobyqa",optCtrl=list(maxfun=2e5)))
+# m3_of 
 
 m3_of <- brm(obj_fea ~ property + (condition * property | id) + (condition | stimulus_nc),
                     data = data_of_structure, family = bernoulli(),
@@ -390,27 +548,79 @@ m3_of <- brm(obj_fea ~ property + (condition * property | id) + (condition | sti
 
 m3_of <- readRDS("../saves/m3_of.rds")
 
+
+# m4_of 
+
+m4_of <- brm(obj_fea ~ condition + (condition * property | id) + (condition | stimulus_nc),
+                    data = data_of_structure, family = bernoulli(),
+          control = list(adapt_delta = 0.99, max_treedepth = 20),
+          sample_prior = F,
+          cores = 4,
+          chains = 4,
+          inits = 0,
+          iter = 5000)%>%
+  add_criterion("waic")%>%
+  saveRDS(.,"../saves/m4_of.rds")
+
+m4_of <- readRDS("../saves/m4_of.rds")
+
+
+# m5_of 
+
+m5_of <- brm(obj_fea ~ 1 + (condition * property | id) + (condition | stimulus_nc),
+                    data = data_of_structure, family = bernoulli(),
+          control = list(adapt_delta = 0.99, max_treedepth = 20),
+          sample_prior = F,
+          cores = 4,
+          chains = 4,
+          inits = 0,
+          iter = 5000)%>%
+  add_criterion("waic")%>%
+  saveRDS(.,"../saves/m5_of.rds")
+
+m5_of <- readRDS("../saves/m5_of.rds")
+
 # model comparison 
-loo_compare(m1_of, m2_of, m3_of, criterion = "waic")%>%
+loo_compare(m1_of, m2_of, m3_of, m4_of, m5_of, criterion = "waic")%>%
   as.data.frame() %>%
   tibble::rownames_to_column("Predictors")%>%
   mutate(
     Predictors = recode(Predictors, 
-                   m1_of = "condition * Condition", 
-                   m2_of = "Age + Condition",
-                   m3_of = "Age"),
+                   m1_of = "condition by property", 
+                   m2_of = "condition + property",
+                   m3_of = "property",
+                   m4_of = "condition",
+                   m5_of = "baseline"),
     weight = exp(elpd_waic) / sum(exp(elpd_waic)),
     weight = round(weight, 2),
     WAIC = round(waic, 2),
     SE = round(se_waic,2))%>%
   select(Predictors, WAIC, SE, weight)
 
+
+
+# best model: baseline
+
+
+
+## https://mc-stan.org/bayesplot/ Bayesplots for ggplot
+# m1_of
+
+# fit <- stan_glm(m1_of, data = data_of_structure)
+# posterior <- as.matrix(fit)
+
+# plot_title <- ggtitle("Posterior distributions",
+#                      "with medians and 80% intervals")
+# mcmc_areas(posterior,
+#           pars = c("hol", "seq"),
+#           prob = 0.8) + plot_title
+
 ```
 
 
-3.3. DV 'Feature content' (TO DO Baysian Models correct)
+3.3. DV 'Feature content'
 ```{r}
-# m1_fc <- glmer(feature_str ~ condition * predicate + (condition * predicate | id) + (1 | data$stimulus_nc), family = binomial, data = data_fea_content,control=glmerControl(optimizer="bobyqa",optCtrl=list(maxfun=2e5)))
+# m1_fc 
 
 m1_fc <- brm(feature_str ~ condition * property + (condition * property | id) + (condition | stimulus_nc),
                     data = data_fea_content, family = bernoulli(),
@@ -426,7 +636,7 @@ m1_fc <- brm(feature_str ~ condition * property + (condition * property | id) + 
 m1_fc <- readRDS("../saves/m1_fc.rds")
 
 
-# m2_fc <- glmer(feature_str ~ condition + predicate + (condition * predicate | id) + (1 | data$stimulus_nc), family = binomial, data = data_fea_content,control=glmerControl(optimizer="bobyqa",optCtrl=list(maxfun=2e5)))
+# m2_fc 
 
 m2_fc <- brm(feature_str ~ condition + property + (condition * property | id) + (condition | stimulus_nc),
                     data = data_fea_content, family = bernoulli(),
@@ -442,7 +652,7 @@ m2_fc <- brm(feature_str ~ condition + property + (condition * property | id) + 
 m2_fc <- readRDS("../saves/m2_fc.rds")
 
 
-# m3_fc <- glmer(feature_str ~ predicate + (condition * predicate | id) + (1 | data$stimulus_nc), family = binomial, data = data_fea_content,control=glmerControl(optimizer="bobyqa",optCtrl=list(maxfun=2e5)))
+# m3_fc 
 
 m3_fc <- brm(feature_str ~ property + (condition * property | id) + (condition | stimulus_nc),
                     data = data_fea_content, family = bernoulli(),
@@ -458,20 +668,57 @@ m3_fc <- brm(feature_str ~ property + (condition * property | id) + (condition |
 m3_fc <- readRDS("../saves/m3_fc.rds")
 
 
+# m4_fc 
+
+m4_fc <- brm(feature_str ~ condition + (condition * property | id) + (condition | stimulus_nc),
+                    data = data_fea_content, family = bernoulli(),
+          control = list(adapt_delta = 0.99, max_treedepth = 20),
+          sample_prior = F,
+          cores = 4,
+          chains = 4,
+          inits = 0,
+          iter = 5000)%>%
+  add_criterion("waic")%>%
+  saveRDS(.,"../saves/m4_fc.rds")
+
+m4_fc <- readRDS("../saves/m4_fc.rds")
+
+
+# m5_fc 
+
+m5_fc <- brm(feature_str ~ 1 + (condition * property | id) + (condition | stimulus_nc),
+                    data = data_fea_content, family = bernoulli(),
+          control = list(adapt_delta = 0.99, max_treedepth = 20),
+          sample_prior = F,
+          cores = 4,
+          chains = 4,
+          inits = 0,
+          iter = 5000)%>%
+  add_criterion("waic")%>%
+  saveRDS(.,"../saves/m5_fc.rds")
+
+m5_fc <- readRDS("../saves/m5_fc.rds")
+
+
 # model comparison 
-loo_compare(m1_fc, m2_fc, m3_fc, criterion = "waic")%>%
+loo_compare(m1_fc, m2_fc, m3_fc, m4_fc, m5_fc, criterion = "waic")%>%
   as.data.frame() %>%
   tibble::rownames_to_column("Predictors")%>%
   mutate(
     Predictors = recode(Predictors, 
-                   m1_fc = "condition * Condition", 
-                   m2_fc = "Age + Condition",
-                   m3_fc = "Age"),
+                   m1_fc = "condition by property", 
+                   m2_fc = "condition + property",
+                   m3_fc = "property",
+                   m4_fc = "condition",
+                   m5_fc = "baseline"),
     weight = exp(elpd_waic) / sum(exp(elpd_waic)),
     weight = round(weight, 2),
     WAIC = round(waic, 2),
     SE = round(se_waic,2))%>%
   select(Predictors, WAIC, SE, weight)
+
+
+## best model: condition by property
 ```
 
 
@@ -480,19 +727,336 @@ loo_compare(m1_fc, m2_fc, m3_fc, criterion = "waic")%>%
 4.1. Create data file for word clouds
 ```{r}
 data_file <- read.csv2("data_file.csv")%>%
-  select(-X)
+  select(-X) 
 
 data_words <- read.csv2("Words_data_codiert.csv")%>%
-  select(-X)
+  select(-X) 
 
 data_wordcloud <- data_file %>%
-  left_join(data_words)
+  left_join(data_words) %>%
+  mutate (value = tolower(value))
+
+
+## TO DO: Rechtschreibfehler korrigieren
+
+### ?? nachdem Kleinschreibung geändert wurde müssten die Wörter, die jetzt gleich sind, als ein value notiert werden (in der Zeile muss doe freq der beiden Wörter addiert werden und nur ein type (sollten identisch sein) verwendet werden)
+data_words <- read.csv2("Words_data_codiert.csv")%>%
+  select(-X) %>%
+  mutate (value = tolower(value)) %>%
+  group_by(value) %>%
+  summarise(freq = n(freq), type = first(type))
+
+  
+  ## 439 Zeilen  
+
+## vor Häufigkeiten nur Kleinschreibung!! (tolower)
+## Rechtschreibfehler korrigieren (in Excel)  
 ```
 
 
-4.2. Wordclouds for objects (objects/animals) (sepearate for hol versus seq)
+Wordclouds for each stimulus (objects)
 ```{r}
-# par(mfrow=c(2,2))
+## ball
+ball_hol <- data_wordcloud %>%
+  filter(type == "object", object == "ball", condition == "hol") %>%
+  select(value, freq) %>%
+  distinct() 
+
+wordcloud(words = ball_hol$value, freq = ball_hol$freq, min.freq = 1,
+          max.words=200, random.order=FALSE, rot.per=0.35, 
+          colors=brewer.pal(8, "Dark2"))
+
+ball_seq <- data_wordcloud %>%
+  filter(type == "object", object == "ball", condition == "seq") %>%
+  select(value, freq) %>%
+  distinct() 
+
+wordcloud(words = ball_seq$value, freq = ball_seq$freq, min.freq = 1,
+          max.words=200, random.order=FALSE, rot.per=0.35, 
+          colors=brewer.pal(8, "Dark2"))
+
+
+## bike
+bike_hol <- data_wordcloud %>%
+  filter(type == "object", object == "bike", condition == "hol") %>%
+  select(value, freq) %>%
+  distinct() 
+
+wordcloud(words = bike_hol$value, freq = bike_hol$freq, min.freq = 1,
+          max.words=200, random.order=FALSE, rot.per=0.35, 
+          colors=brewer.pal(8, "Dark2"))
+
+bike_seq <- data_wordcloud %>%
+  filter(type == "object", object == "bike", condition == "seq") %>%
+  select(value, freq) %>%
+  distinct() 
+
+wordcloud(words = bike_seq$value, freq = bike_seq$freq, min.freq = 1,
+          max.words=200, random.order=FALSE, rot.per=0.35, 
+          colors=brewer.pal(8, "Dark2"))
+
+# cat
+cat_hol <- data_wordcloud %>%
+  filter(type == "object", object == "cat", condition == "hol") %>%
+  select(value, freq) %>%
+  distinct() 
+
+wordcloud(words = cat_hol$value, freq = cat_hol$freq, min.freq = 1,
+          max.words=200, random.order=FALSE, rot.per=0.35, 
+          colors=brewer.pal(8, "Dark2"))
+
+cat_seq <- data_wordcloud %>%
+  filter(type == "object", object == "cat", condition == "seq") %>%
+  select(value, freq) %>%
+  distinct() 
+
+wordcloud(words = cat_seq$value, freq = cat_seq$freq, min.freq = 1,
+          max.words=200, random.order=FALSE, rot.per=0.35, 
+          colors=brewer.pal(8, "Dark2"))
+
+## comb
+comb_hol <- data_wordcloud %>%
+  filter(type == "object", object == "comb", condition == "hol") %>%
+  select(value, freq) %>%
+  distinct() 
+
+wordcloud(words = comb_hol$value, freq = comb_hol$freq, min.freq = 1,
+          max.words=200, random.order=FALSE, rot.per=0.35, 
+          colors=brewer.pal(8, "Dark2"))
+
+comb_seq <- data_wordcloud %>%
+  filter(type == "object", object == "comb", condition == "seq") %>%
+  select(value, freq) %>%
+  distinct() 
+
+wordcloud(words = comb_seq$value, freq = comb_seq$freq, min.freq = 1,
+          max.words=200, random.order=FALSE, rot.per=0.35, 
+          colors=brewer.pal(8, "Dark2"))
+
+## duck
+duck_hol <- data_wordcloud %>%
+  filter(type == "object", object == "duck", condition == "hol") %>%
+  select(value, freq) %>%
+  distinct() 
+
+wordcloud(words = duck_hol$value, freq = duck_hol$freq, min.freq = 1,
+          max.words=200, random.order=FALSE, rot.per=0.35, 
+          colors=brewer.pal(8, "Dark2"))
+
+duck_seq <- data_wordcloud %>%
+  filter(type == "object", object == "duck", condition == "seq") %>%
+  select(value, freq) %>%
+  distinct() 
+
+wordcloud(words = duck_seq$value, freq = duck_seq$freq, min.freq = 1,
+          max.words=200, random.order=FALSE, rot.per=0.35, 
+          colors=brewer.pal(8, "Dark2"))
+
+## elephant
+elephant_hol <- data_wordcloud %>%
+  filter(type == "object", object == "elephant", condition == "hol") %>%
+  select(value, freq) %>%
+  distinct() 
+
+wordcloud(words = elephant_hol$value, freq = elephant_hol$freq, min.freq = 1,
+          max.words=200, random.order=FALSE, rot.per=0.35, 
+          colors=brewer.pal(8, "Dark2"))
+
+elephant_seq <- data_wordcloud %>%
+  filter(type == "object", object == "elephant", condition == "seq") %>%
+  select(value, freq) %>%
+  distinct() 
+
+wordcloud(words = elephant_seq$value, freq = elephant_seq$freq, min.freq = 1,
+          max.words=200, random.order=FALSE, rot.per=0.35, 
+          colors=brewer.pal(8, "Dark2"))
+
+## fork
+fork_hol <- data_wordcloud %>%
+  filter(type == "object", object == "fork", condition == "hol") %>%
+  select(value, freq) %>%
+  distinct() 
+
+wordcloud(words = fork_hol$value, freq = fork_hol$freq, min.freq = 1,
+          max.words=200, random.order=FALSE, rot.per=0.35, 
+          colors=brewer.pal(8, "Dark2"))
+
+fork_seq <- data_wordcloud %>%
+  filter(type == "object", object == "fork", condition == "seq") %>%
+  select(value, freq) %>%
+  distinct() 
+
+wordcloud(words = fork_seq$value, freq = fork_seq$freq, min.freq = 1,
+          max.words=200, random.order=FALSE, rot.per=0.35, 
+          colors=brewer.pal(8, "Dark2"))
+
+## hammer
+hammer_hol <- data_wordcloud %>%
+  filter(type == "object", object == "hammer", condition == "hol") %>%
+  select(value, freq) %>%
+  distinct() 
+
+wordcloud(words = hammer_hol$value, freq = hammer_hol$freq, min.freq = 1,
+          max.words=200, random.order=FALSE, rot.per=0.35, 
+          colors=brewer.pal(8, "Dark2"))
+
+hammer_seq <- data_wordcloud %>%
+  filter(type == "object", object == "hammer", condition == "seq") %>%
+  select(value, freq) %>%
+  distinct() 
+
+wordcloud(words = hammer_seq$value, freq = hammer_seq$freq, min.freq = 1,
+          max.words=200, random.order=FALSE, rot.per=0.35, 
+          colors=brewer.pal(8, "Dark2"))
+
+## monkey
+monkey_hol <- data_wordcloud %>%
+  filter(type == "object", object == "monkey", condition == "hol") %>%
+  select(value, freq) %>%
+  distinct() 
+
+wordcloud(words = monkey_hol$value, freq = monkey_hol$freq, min.freq = 1,
+          max.words=200, random.order=FALSE, rot.per=0.35, 
+          colors=brewer.pal(8, "Dark2"))
+
+monkey_seq <- data_wordcloud %>%
+  filter(type == "object", object == "monkey", condition == "seq") %>%
+  select(value, freq) %>%
+  distinct() 
+
+wordcloud(words = monkey_seq$value, freq = monkey_seq$freq, min.freq = 1,
+          max.words=200, random.order=FALSE, rot.per=0.35, 
+          colors=brewer.pal(8, "Dark2"))
+
+
+
+```
+```{r}
+## par(mfrow=c(6,2))
+
+# big
+big_hol <- data_wordcloud %>%
+  filter(type == "feature", predicate == "big", condition == "hol") %>%
+  select(value, freq) %>%
+  distinct() 
+
+wordcloud(words = big_hol$value, freq = big_hol$freq, min.freq = 1,
+          max.words=200, random.order=FALSE, rot.per=0.35, 
+          colors=brewer.pal(8, "Dark2"))
+
+big_seq <- data_wordcloud %>%
+  filter(type == "feature", predicate == "big", condition == "seq") %>%
+  select(value, freq) %>%
+  distinct() 
+
+wordcloud(words = big_seq$value, freq = big_seq$freq, min.freq = 1,
+          max.words=200, random.order=FALSE, rot.per=0.35, 
+          colors=brewer.pal(8, "Dark2"))
+
+
+# jump
+jump_hol <- data_wordcloud %>%
+  filter(type == "feature", predicate == "jump", condition == "hol") %>%
+  select(value, freq) %>%
+  distinct() 
+
+wordcloud(words = jump_hol$value, freq = jump_hol$freq, min.freq = 1,
+          max.words=200, random.order=FALSE, rot.per=0.35, 
+          colors=brewer.pal(8, "Dark2"))
+
+jump_seq <- data_wordcloud %>%
+  filter(type == "feature", predicate == "jump", condition == "seq") %>%
+  select(value, freq) %>%
+  distinct() 
+
+wordcloud(words = jump_seq$value, freq = jump_seq$freq, min.freq = 1,
+          max.words=200, random.order=FALSE, rot.per=0.35, 
+          colors=brewer.pal(8, "Dark2"))
+
+# many 
+many_hol <- data_wordcloud %>%
+  filter(type == "feature", predicate == "many", condition == "hol") %>%
+  select(value, freq) %>%
+  distinct() 
+
+wordcloud(words = many_hol$value, freq = many_hol$freq, min.freq = 1,
+          max.words=200, random.order=FALSE, rot.per=0.35, 
+          colors=brewer.pal(8, "Dark2"))
+
+many_seq <- data_wordcloud %>%
+  filter(type == "feature", predicate == "many", condition == "seq") %>%
+  select(value, freq) %>%
+  distinct() 
+
+wordcloud(words = many_seq$value, freq = many_seq$freq, min.freq = 1,
+          max.words=200, random.order=FALSE, rot.per=0.35, 
+          colors=brewer.pal(8, "Dark2"))
+
+# one
+one_hol <- data_wordcloud %>%
+  filter(type == "feature", predicate == "one", condition == "hol") %>%
+  select(value, freq) %>%
+  distinct() 
+
+wordcloud(words = one_hol$value, freq = one_hol$freq, min.freq = 1,
+          max.words=200, random.order=FALSE, rot.per=0.35, 
+          colors=brewer.pal(8, "Dark2"))
+
+one_seq <- data_wordcloud %>%
+  filter(type == "feature", predicate == "one", condition == "seq") %>%
+  select(value, freq) %>%
+  distinct() 
+
+wordcloud(words = one_seq$value, freq = one_seq$freq, min.freq = 1,
+          max.words=200, random.order=FALSE, rot.per=0.35, 
+          colors=brewer.pal(8, "Dark2"))
+
+# run
+run_hol <- data_wordcloud %>%
+  filter(type == "feature", predicate == "run", condition == "hol") %>%
+  select(value, freq) %>%
+  distinct() 
+
+wordcloud(words = run_hol$value, freq = run_hol$freq, min.freq = 1,
+          max.words=200, random.order=FALSE, rot.per=0.35, 
+          colors=brewer.pal(8, "Dark2"))
+
+run_seq <- data_wordcloud %>%
+  filter(type == "feature", predicate == "run", condition == "seq") %>%
+  select(value, freq) %>%
+  distinct() 
+
+wordcloud(words = run_seq$value, freq = run_seq$freq, min.freq = 1,
+          max.words=200, random.order=FALSE, rot.per=0.35, 
+          colors=brewer.pal(8, "Dark2"))
+
+# small
+small_hol <- data_wordcloud %>%
+  filter(type == "feature", predicate == "small", condition == "hol") %>%
+  select(value, freq) %>%
+  distinct() 
+
+wordcloud(words = small_hol$value, freq = small_hol$freq, min.freq = 1,
+          max.words=200, random.order=FALSE, rot.per=0.35, 
+          colors=brewer.pal(8, "Dark2"))
+
+small_seq <- data_wordcloud %>%
+  filter(type == "feature", predicate == "small", condition == "seq") %>%
+  select(value, freq) %>%
+  distinct() 
+
+wordcloud(words = small_seq$value, freq = small_seq$freq, min.freq = 1,
+          max.words=200, random.order=FALSE, rot.per=0.35, 
+          colors=brewer.pal(8, "Dark2"))
+
+
+```
+
+
+
+4.2. Wordclouds for objects (objects/animals) (sepearate for hol versus seq) (für jedes Objekt sepearat)
+```{r}
+## par(mfrow=c(2,2))
 
 ## object (hol vs seq)
 object_hol <- data_wordcloud %>%
@@ -536,7 +1100,7 @@ wordcloud(words = animal_seq$value, freq = animal_seq$freq, min.freq = 1,
 ```
 
 
-4.3. wordclouds for features (movement/number/size) (sepearate for hol versus seq)
+4.3. wordclouds for features (movement/number/size) (sepearate for hol versus seq) (für jedes feature seperat, Rechtschreibung)
 ```{r}
 ## movement (hol vs seq)
 movement_hol <- data_wordcloud %>%
