@@ -17,6 +17,7 @@ library(wordcloud)
 library(RColorBrewer)
 library(patchwork)
 library(ngram)
+library(coda)
 
 # install.packages("bayesplot")
 # if (!require("devtools")) {
@@ -26,7 +27,7 @@ library(ngram)
 
 library("bayesplot")
 library("rstanarm")
-library("ggplot2")
+
 
 ##library(psychometric)
 ##library(multilevel)
@@ -40,7 +41,26 @@ library("ggplot2")
 ## devtools::install_github("langcog/langcog")
 
 data <- read.csv2("data_file_stimulus.csv")
-data
+
+data%>%
+  mutate(responses = as.character(responses),
+         responses= substr(responses, 1, nchar(responses)-2))
+
+
+
+
+estimate_mode <- function(s) {
+  d <- density(s)
+  return(d$x[which.max(d$y)])
+}
+hdi_upper<- function(s){
+  m <- HPDinterval(mcmc(s))
+  return(m["var1","upper"])
+}
+hdi_lower<- function(s){
+  m <- HPDinterval(mcmc(s))
+  return(m["var1","lower"])
+}
 
 ## To Do Anführung Klammer
 ```
@@ -370,10 +390,14 @@ m5_l_p <- brm(words ~ 1 + (condition * property | id) + (condition | stimulus_nc
 m5_l_p <- readRDS("../saves/m5_l_p.rds")
 
 
+weigths_length_poisson <-  model_weights(m1_l_p, m2_l_p, m3_l_p, m4_l_p, m5_l_p, weights = "waic")%>%
+  as_data_frame(rownames = "Predictors")%>%
+  rename(weight = value)
+
 # model comparison 
 loo_compare(m1_l_p, m2_l_p, m3_l_p, m4_l_p, m5_l_p, criterion = "waic")%>%
-  as.data.frame() %>%
-  tibble::rownames_to_column("Predictors")%>%
+  as_data_frame(rownames = "Predictors") %>%
+  left_join(weigths_length_poisson)%>%
   mutate(
     Predictors = recode(Predictors, 
                    m1_l_p = "condition by property", 
@@ -381,8 +405,6 @@ loo_compare(m1_l_p, m2_l_p, m3_l_p, m4_l_p, m5_l_p, criterion = "waic")%>%
                    m3_l_p = "property",
                    m4_l_p = "condition",
                    m5_l_p = "baseline"),
-    weight = exp(elpd_waic) / sum(exp(elpd_waic)),
-    weight = round(weight, 2),
     WAIC = round(waic, 2),
     SE = round(se_waic,2))%>%
   select(Predictors, WAIC, SE, weight)
@@ -474,23 +496,27 @@ m5_l_nb <- readRDS("../saves/m5_l_nb.rds")
 
 
 # model comparison 
+weigths_length_poisson <-  model_weights(m1_l_nb, m2_l_nb, m3_l_nb, m4_l_nb, m5_l_nb, weights = "waic")%>%
+  as_data_frame(rownames = "Predictors")%>%
+  rename(weight = value)
+
+# model comparison 
 loo_compare(m1_l_nb, m2_l_nb, m3_l_nb, m4_l_nb, m5_l_nb, criterion = "waic")%>%
-  as.data.frame() %>%
-  tibble::rownames_to_column("Predictors")%>%
+  as_data_frame(rownames = "Predictors") %>%
+  left_join(weigths_length_poisson)%>%
   mutate(
     Predictors = recode(Predictors, 
                    m1_l_nb = "condition by property", 
                    m2_l_nb = "condition + property",
                    m3_l_nb = "property",
-                   m4_l_nb = "condition",
-                   m5_l_nb = "baseline"),
-    weight = exp(elpd_waic) / sum(exp(elpd_waic)),
-    weight = round(weight, 2),
+                   m4_l_nb= "condition",
+                   m5_l_nb= "baseline"),
     WAIC = round(waic, 2),
     SE = round(se_waic,2))%>%
   select(Predictors, WAIC, SE, weight)
 
 ## best model: condition only
+
 
 
 ```
@@ -718,6 +744,31 @@ loo_compare(m1_fc, m2_fc, m3_fc, m4_fc, m5_fc, criterion = "waic")%>%
   select(Predictors, WAIC, SE, weight)
 
 
+
+x <- posterior_samples(m1_fc, "^b")%>%
+  mutate(movement_hol = plogis(b_Intercept),
+         movement_seq = plogis(b_Intercept + b_conditionseq),
+         number_hol = plogis(b_Intercept+ b_propertynumber),
+         number_seq = plogis(b_Intercept+ b_conditionseq + b_propertynumber + `b_conditionseq:propertynumber`),
+         size_hol = plogis(b_Intercept+ b_propertysize),
+         size_seq = plogis(b_Intercept+ b_conditionseq + b_propertysize + `b_conditionseq:propertysize`))%>%
+  select(movement_hol,movement_seq,number_hol,number_seq,size_hol,size_seq)%>%
+  gather(condition, y)%>%
+  separate(condition, sep = "_", into = c("property","condition"))%>%
+  group_by(property, condition)%>%
+  summarise(map = estimate_mode(y),
+            lci = hdi_lower(y),
+            uci = hdi_upper(y))
+
+ggplot(x, aes(x = condition, y = map, col= property)) +
+  geom_pointrange(aes(y = map, ymin = lci, ymax = uci), pch = 1, position = position_dodge(width = .5))+
+  labs(x="condition",y="Proportion correct feature")+
+  theme_few() +
+  ylim(-0.05,1.05)
+
+
+
+
 ## best model: condition by property
 ```
 
@@ -734,7 +785,9 @@ data_words <- read.csv2("Words_data_codiert.csv")%>%
 
 data_wordcloud <- data_file %>%
   left_join(data_words) %>%
-  mutate (value = tolower(value))
+  mutate (value = tolower(value))%>%
+  group_by(object, predicate, condition, property, class, value)%>%
+  summarise(freq = sum(freq))
 
 
 ## TO DO: Rechtschreibfehler korrigieren
